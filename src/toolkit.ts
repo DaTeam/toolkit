@@ -165,38 +165,35 @@ export default class ToolKit {
     }
 
     static checkType<T = any>(arg: any, type: Type): arg is T {
-        if (type & Type.Undefined && this.isUndefined(arg)) return true;
-
-        if (type & Type.Null && this.isNull(arg)) return true;
+        if (type & Type.Undefined) return this.isUndefined(arg);
+        if (type & Type.Null) return this.isNull(arg);
+        if (type & Type.Boolean) return this.isBoolean(arg);
+        if (type & Type.Function) return this.isFunction(arg);
 
         if (type & Type.Number && this.isNumber(arg)) {
+            if (type & Type.Valid) return !this.isNaN(arg);
             if (type & ~Type.Valid) return true;
-            if (type & Type.Valid && !this.isNaN(arg)) return true;
         }
 
         if (type & Type.String && this.isString(arg)) {
+            if (type & Type.NonEmpty) return arg.length > 0;
             if (type & ~Type.NonEmpty) return true;
-            if (type & Type.NonEmpty && arg.length > 0) return true;
         }
 
-        if (type & Type.Boolean && this.isBoolean(arg)) return true;
-
         if (type & Type.Date && this.isDate(arg)) {
+            if (type & Type.Valid) return this.isValidDate(arg);
             if (type & ~Type.Valid) return true;
-            if (type & Type.Valid && this.isValidDate(arg)) return true;
         }
 
         if (type & Type.Object && this.isObject(arg)) {
+            if (type & Type.NonEmpty) return Object.keys(arg).length > 0;
             if (type & ~Type.NonEmpty) return true;
-            if (type & Type.NonEmpty && Object.keys(arg).length > 0) return true;
         }
 
         if (type & Type.Array && this.isArray(arg)) {
+            if (type & Type.NonEmpty) return arg.length > 0;
             if (type & ~Type.NonEmpty) return true;
-            if (type & Type.NonEmpty && arg.length > 0) return true;
         }
-
-        if (type & Type.Function && this.isFunction(arg)) return true;
 
         return false;
     }
