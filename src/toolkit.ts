@@ -835,7 +835,7 @@ export class TimeoutPromise<T> {
     private _promise: Promise<T>;
     private _isTerminated = false;
 
-    protected timeoutId!: number;
+    protected timeoutId!: any;
     protected resolve!: (value?: T | PromiseLike<T> | undefined) => void;
     protected reject!: (reason?: any) => void;
     protected safeCancel: boolean;
@@ -857,7 +857,7 @@ export class TimeoutPromise<T> {
                 this.timeoutId = setTimeout(() => {
                     this.resolve(Promise.resolve(handler()));
                     this._isTerminated = true;
-                }, timeout);
+                }, timeout!);
             }
             catch (err) {
                 this.reject(err);
