@@ -322,10 +322,10 @@ export default class ToolKit {
         });
     }
 
-    static sortByProperty<T>(
+    static sortByProperty<T = any, PropertyT = any>(
         array: T[],
         propertyAccessor: string,
-        compareFn: (a: any, b: any) => number,
+        compareFn: (a: PropertyT, b: PropertyT) => number,
         options?: { nullFirst?: boolean, ascending?: boolean }
     ): void {
         if (!ToolKit.isArray(array) || !ToolKit.isString(propertyAccessor) || !ToolKit.isFunction(compareFn)) {
@@ -973,4 +973,18 @@ declare global {
 
 String.prototype.capitalize = function capitalize(): string {
     return this.charAt(0).toUpperCase() + this.slice(1);
+};
+
+/*
+ ** Object Extension
+ */
+
+declare global {
+    interface Object {
+        forEachProperty(callbackfn: (value: any, key: string) => void): void;
+    }
+}
+
+Object.prototype.forEachProperty = function forEachProperty(callbackfn: (value: any, key: string) => void): void {
+    Object.keys(this).forEach(key => callbackfn(this[key], key));
 };
