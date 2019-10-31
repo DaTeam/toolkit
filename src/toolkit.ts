@@ -944,22 +944,24 @@ Date.prototype.getEndOfMonth = Date.prototype.getEndOfMonth ||
         return new Date(this.getFullYear(), this.getMonth() + 1, 0);
     };
 
-Date.prototype.updateTime = Date.prototype.updateTime || function updateTime(this: Date, time: Date): void {
-    if (!ToolKit.isValidDate(this) || !ToolKit.checkType(time, Type.Date | Type.Valid)) return;
+Date.prototype.updateTime = Date.prototype.updateTime ||
+    function updateTime(this: Date, time: Date): void {
+        if (!ToolKit.isValidDate(this) || !ToolKit.checkType(time, Type.Date | Type.Valid)) return;
 
-    this.setHours(time.getHours());
-    this.setMinutes(time.getMinutes());
-    this.setSeconds(time.getSeconds());
-    this.setMilliseconds(time.getMilliseconds());
-};
+        this.setHours(time.getHours());
+        this.setMinutes(time.getMinutes());
+        this.setSeconds(time.getSeconds());
+        this.setMilliseconds(time.getMilliseconds());
+    };
 
-Date.prototype.updateDate = Date.prototype.updateDate || function updateDate(this: Date, date: Date): void {
-    if (!ToolKit.isValidDate(this) || !ToolKit.checkType(date, Type.Date | Type.Valid)) return;
+Date.prototype.updateDate = Date.prototype.updateDate ||
+    function updateDate(this: Date, date: Date): void {
+        if (!ToolKit.isValidDate(this) || !ToolKit.checkType(date, Type.Date | Type.Valid)) return;
 
-    this.setFullYear(date.getFullYear());
-    this.setMonth(date.getMonth());
-    this.setDate(date.getDate());
-};
+        this.setFullYear(date.getFullYear());
+        this.setMonth(date.getMonth());
+        this.setDate(date.getDate());
+    };
 
 /*
  ** String Extension
@@ -971,9 +973,10 @@ declare global {
     }
 }
 
-String.prototype.capitalize = function capitalize(): string {
-    return this.charAt(0).toUpperCase() + this.slice(1);
-};
+String.prototype.capitalize = String.prototype.capitalize ||
+    function capitalize(this: string): string {
+        return this.charAt(0).toUpperCase() + this.slice(1);
+    };
 
 /*
  ** Object Extension
@@ -985,6 +988,7 @@ declare global {
     }
 }
 
-Object.prototype.forEachProperty = function forEachProperty(callbackfn: (value: any, key: string) => void): void {
-    Object.keys(this).forEach(key => callbackfn(this[key], key));
-};
+Object.prototype.forEachProperty = Object.prototype.forEachProperty ||
+    function forEachProperty(this: Object, callbackfn: (value: any, key: string) => void): void {
+        Object.keys(this).forEach(key => callbackfn(this[key], key));
+    };
