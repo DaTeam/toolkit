@@ -989,6 +989,6 @@ declare global {
 }
 
 Object.prototype.forEachProperty = Object.prototype.forEachProperty ||
-    function forEachProperty(this: Object, callbackfn: (value: any, key: string) => void): void {
-        Object.keys(this).forEach(key => callbackfn(this[key], key));
+    function forEachProperty<T extends Object>(this: T, callbackfn: (value: any, key: string) => void): void {
+        Object.keys(this).forEach(key => callbackfn(this[key as keyof T], key));
     };
