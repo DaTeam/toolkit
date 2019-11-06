@@ -1,3 +1,5 @@
+/* eslint-disable func-style */
+
 export enum Type {
     Undefined = 0,
     Null = 1 << 0,
@@ -22,11 +24,11 @@ const boolTag = '[object Boolean]';
 
 let undef: undefined;
 
-function isObjectLike(arg: any): boolean { // eslint-disable-line func-style
+function isObjectLike(arg: any): boolean {
     return arg != null && typeof arg === 'object'; // eslint-disable-line eqeqeq
 }
 
-function innerMapToDeepObject(target: any, src: any, options: MapOptions): void { // eslint-disable-line func-style
+function innerMapToDeepObject(target: any, src: any, options: MapOptions): void {
     if (!ToolKit.isObject(target) || !ToolKit.isObject(src)) return;
 
     const srcKeys = Object.keys(src);
@@ -946,7 +948,7 @@ Date.prototype.getEndOfMonth = Date.prototype.getEndOfMonth ||
 
 Date.prototype.updateTime = Date.prototype.updateTime ||
     function updateTime(this: Date, time: Date): void {
-        if (!ToolKit.isValidDate(this) || !ToolKit.checkType(time, Type.Date | Type.Valid)) return;
+        if (!ToolKit.isValidDate(this)) return;
 
         this.setHours(time.getHours());
         this.setMinutes(time.getMinutes());
@@ -956,7 +958,7 @@ Date.prototype.updateTime = Date.prototype.updateTime ||
 
 Date.prototype.updateDate = Date.prototype.updateDate ||
     function updateDate(this: Date, date: Date): void {
-        if (!ToolKit.isValidDate(this) || !ToolKit.checkType(date, Type.Date | Type.Valid)) return;
+        if (!ToolKit.isValidDate(this)) return;
 
         this.setFullYear(date.getFullYear());
         this.setMonth(date.getMonth());
@@ -988,7 +990,17 @@ declare global {
     }
 }
 
-Object.prototype.forEachProperty = Object.prototype.forEachProperty ||
-    function forEachProperty<T extends Object>(this: T, callbackfn: (value: any, key: string) => void): void {
-        Object.keys(this).forEach(key => callbackfn(this[key as keyof T], key));
-    };
+// 
+function forEachProperty<T extends Object>(this: T, callbackfn: (value: any, key: string) => void): void {
+    Object.keys(this).forEach(key => callbackfn(this[key as keyof T], key));
+}
+
+// Specific format for react-native
+if (!Object.prototype.forEachProperty) {
+    Object.defineProperty(Object.prototype, forEachProperty.name, {
+        value: forEachProperty,
+        enumerable: false,
+        configurable: true,
+        writable: true
+    });
+}
