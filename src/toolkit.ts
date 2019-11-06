@@ -167,34 +167,34 @@ export default class ToolKit {
     }
 
     static checkType<T = any>(arg: any, type: Type): arg is T {
-        if (type & Type.Undefined) return this.isUndefined(arg);
-        if (type & Type.Null) return this.isNull(arg);
-        if (type & Type.Boolean) return this.isBoolean(arg);
-        if (type & Type.Function) return this.isFunction(arg);
+        if (type & Type.Undefined && this.isUndefined(arg)) return true;
+        if (type & Type.Null && this.isNull(arg)) return true;
+        if (type & Type.Boolean && this.isBoolean(arg)) return true;
+        if (type & Type.Function && this.isFunction(arg)) return true;
 
         if (type & Type.Number && this.isNumber(arg)) {
             if (type & Type.Valid) return !this.isNaN(arg);
-            if (type & ~Type.Valid) return true;
+            return true;
         }
 
         if (type & Type.String && this.isString(arg)) {
             if (type & Type.NonEmpty) return arg.length > 0;
-            if (type & ~Type.NonEmpty) return true;
+            return true;
         }
 
         if (type & Type.Date && this.isDate(arg)) {
             if (type & Type.Valid) return this.isValidDate(arg);
-            if (type & ~Type.Valid) return true;
+            return true;
         }
 
         if (type & Type.Object && this.isObject(arg)) {
             if (type & Type.NonEmpty) return Object.keys(arg).length > 0;
-            if (type & ~Type.NonEmpty) return true;
+            return true;
         }
 
         if (type & Type.Array && this.isArray(arg)) {
             if (type & Type.NonEmpty) return arg.length > 0;
-            if (type & ~Type.NonEmpty) return true;
+            return true;
         }
 
         return false;
@@ -206,15 +206,25 @@ export default class ToolKit {
         return arg;
     }
 
-    static computeForType<InputType, ComputeResult, DefaultResult extends any = null>(
+    static computeForType<InputType, ComputeResult, DefaultValue extends any>(
         arg: InputType,
         condition: Type,
         computeFn: (arg: InputType) => ComputeResult,
-        defaultValue: DefaultResult
-    ): ComputeResult | DefaultResult {
+        defaultValue: DefaultValue
+    ): ComputeResult | DefaultValue {
         if (!this.checkType<InputType>(arg, condition)) return defaultValue;
 
         return computeFn(arg);
+    }
+
+    static ternaryOfType<InputType, DefaultValue extends any>(
+        arg: InputType,
+        condition: Type,
+        defaultValue: DefaultValue
+    ): InputType | DefaultValue {
+        if (!this.checkType<InputType>(arg, condition)) return defaultValue;
+
+        return arg;
     }
 
     static noop(): void { }
