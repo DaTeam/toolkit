@@ -1,0 +1,44 @@
+{
+    "exclude": [
+        "node_modules",
+        "**/*.spec.ts"
+    ],
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.js",
+        "src/**/*.d.ts"
+    ],
+    "compilerOptions": {
+        "target": "esnext",
+        "lib": [
+            "esnext",
+            "dom"
+        ],
+        "outDir": "./dist",
+        "allowJs": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "isolatedModules": false,
+        "typeRoots": [],
+        "jsx": "preserve",
+        "strict": true /* Enable all strict type-checking options. */,
+        "declaration": false,
+        "noImplicitAny": true /* Raise error on expressions and declarations with an implied 'any' type. */,
+        "strictNullChecks": true /* Enable strict null checks. */,
+        "strictFunctionTypes": true /* Enable strict checking of function types. */,
+        "noImplicitThis": true /* Raise error on 'this' expressions with an implied 'any' type. */,
+        "alwaysStrict": true /* Parse in strict mode and emit "use strict" for each source file. */,
+        "noUnusedLocals": true /* Report errors on unused locals. */,
+        "noUnusedParameters": true /* Report errors on unused parameters. */,
+        "noImplicitReturns": true /* Report error when not all code paths in function return a value. */,
+        "noFallthroughCasesInSwitch": true /* Report errors for fallthrough cases in switch statement. */,
+        "allowSyntheticDefaultImports": true /* Allow default imports from modules with no default export. This does not affect code emit, just typechecking. */,
+        "esModuleInterop": true /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */,
+        "resolveJsonModule": true /* Resolves imports from .json files */,
+        "strictPropertyInitialization": false /* Enable strict checking of property initialization in classes. */,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true
+    }
+}
