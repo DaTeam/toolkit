@@ -66,10 +66,10 @@ type DiffOptions = {
 };
 
 /**
- * Type checks
+ ** Type checks
  */
 
-export const isDefined = (arg: any): boolean => arg !== undef;
+export const isDefined = (arg: any): boolean => arg !== undef && arg !== null;
 export const isObject = (arg: any): arg is Object => fnObjectToString.call(arg) === '[object Object]';
 export const isString = (arg: any): arg is string =>
     (typeof arg === 'string' || (!isArray(arg) && isObjectLike(arg) && fnObjectToString.call(arg) == stringTag)); // eslint-disable-line eqeqeq
@@ -97,11 +97,8 @@ export const isDate = (arg: any): arg is Date =>
     (isObjectLike(arg) && fnObjectToString.call(arg) === dateTag) || false;
 
 export const isValidDate = (arg: any): boolean => isDate(arg) && !isNaN(arg.getTime());
-export const hasValue = (arg: any): boolean => arg !== undef && arg !== null;
 export const isUndefined = (arg: any): arg is undefined => arg === undef;
 export const isNull = (arg: any): arg is null => arg === null;
-export const isUndefinedOrNull = (arg: any): arg is undefined | null => arg === undef || arg === null;
-
 export const isObjectLike = (arg: any): boolean => arg != null && typeof arg === 'object'; // eslint-disable-line eqeqeq
 export const isNativeTypeObject = (arg: any): boolean =>
     isUndefined(arg) ||
@@ -153,8 +150,8 @@ export const checkType = <T = any>(arg: any, type: Type): arg is T => {
     return false;
 };
 
-export const assertType = <T = any>(arg: T, type: Type): T => {
-    if (!checkType<T>(arg, type)) throw new Error('assertion failed');
+export const assertType = <T = any>(arg: T, type: Type, msg?: string): T => {
+    if (!checkType<T>(arg, type)) throw new AssertionError(msg);
 
     return arg;
 };
@@ -180,16 +177,59 @@ export const ternaryOfType = <InputType, DefaultValue extends any>(
     return arg;
 };
 
+/**
+ ** Asserts
+ */
 
 export const assert = (condition: unknown, msg?: string): asserts condition => {
     if (!condition) throw new AssertionError(msg);
 };
 
-export const noop = (): void => { };
+function assertIsDefinedFn<T>(value: T, msg?: string): asserts value is NonNullable<T> {
+    if (!isDefined(value)) throw new AssertionError(msg);
+}
+
+export const assertIsDefined = assertIsDefinedFn;
+export const assertIsObject = (value: any, msg?: string): asserts value is object => {
+    if (!isObject(value)) throw new AssertionError(msg);
+};
+export const assertIsString = (value: any, msg?: string): asserts value is string => {
+    if (!isString(value)) throw new AssertionError(msg);
+};
+export const assertIsFunction = (value: any, msg?: string): asserts value is Function => {
+    if (!isFunction(value)) throw new AssertionError(msg);
+};
+export const assertIsArray = (value: any, msg?: string): asserts value is Array<any> => {
+    if (!isArray(value)) throw new AssertionError(msg);
+};
+export const assertIsBoolean = (value: any, msg?: string): asserts value is boolean => {
+    if (!isBoolean(value)) throw new AssertionError(msg);
+};
+export const assertIsNumber = (value: any, msg?: string): asserts value is number => {
+    if (!isNumber(value)) throw new AssertionError(msg);
+};
+export const assertIsValidNumber = (value: any, msg?: string): asserts value is number => {
+    if (!isNumber(value) || isNaN(value)) throw new AssertionError(msg);
+};
+export const assertIsFloat = (value: any, msg?: string): asserts value is number => {
+    if (!isFloat(value)) throw new AssertionError(msg);
+};
+export const assertIsDate = (value: any, msg?: string): asserts value is Date => {
+    if (!isDate(value)) throw new AssertionError(msg);
+};
+export const assertIsValidDate = (value: any, msg?: string): asserts value is Date => {
+    if (!isValidDate(value)) throw new AssertionError(msg);
+};
+export const assertIsUndefined = (value: any, msg?: string): asserts value is undefined => {
+    if (!isUndefined(value)) throw new AssertionError(msg);
+};
+export const assertIsNull = (value: any, msg?: string): asserts value is null => {
+    if (!isNull(value)) throw new AssertionError(msg);
+};
 
 /**
-* Array
-*/
+ ** Array
+ */
 
 export const addRange = (src: any[], newElements: any[]) => {
     ArrayProto.push.apply(src, newElements);
@@ -269,7 +309,7 @@ export const orderBy = <T>(
     }
 
     const internalOptions = { nullFirst: false, ascending: true };
-    if (hasValue(options) && isObject(options)) {
+    if (isDefined(options) && isObject(options)) {
         if (options.nullFirst === true) internalOptions.nullFirst = true;
         if (options.ascending === false) internalOptions.ascending = false;
     }
@@ -301,7 +341,7 @@ export const sortByProperty = <T = any, PropertyT = any>(
     }
 
     const internalOptions = { nullFirst: false, ascending: true };
-    if (hasValue(options) && isObject(options)) {
+    if (isDefined(options) && isObject(options)) {
         if (options.nullFirst === true) internalOptions.nullFirst = true;
         if (options.ascending === false) internalOptions.ascending = false;
     }
@@ -359,8 +399,8 @@ export const removeAt = <T>(array: T[], index: number): boolean => {
 };
 
 /**
-* String
-*/
+ ** String
+ */
 
 export const fixedLenInteger = (value: number, length: number): string =>
     (Array(length).join('0') + value).slice(-length);
@@ -378,14 +418,14 @@ export const toCamelCase = (value: string): string => {
 };
 
 /**
- * Number
+ ** Number
  */
 
 export const randomNumber = (minValue: number, maxValue: number): number =>
     Math.floor(Math.random() * maxValue + minValue);
 
 /**
- * Date
+ ** Date
  */
 
 export const dateOnly = (date: Date): Date => {
@@ -407,7 +447,7 @@ export const formatDate: (date: Date, customFn?: (year: string, month: string, d
 
 export const formatHour: (value: Date | number, customFn?: (h: string, m: string, s: string) => string) => string =
     (value, customFn = (hour, minute, second) => `${hour}:${minute}:${second}`) => {
-        if (isUndefinedOrNull(value)) throw new TypeError('value is not valid');
+        if (!isDefined(value)) throw new TypeError('value is not valid');
         if (!isFunction(customFn)) throw new TypeError('customFn is not valid');
 
         let hour;
@@ -503,7 +543,7 @@ export const parseDate = (input: string): Date | null => {
 };
 
 export const parseHour = (input: string): Date | null => {
-    if (isUndefinedOrNull(input)) return null;
+    if (!isDefined(input)) return null;
 
     const iso = /(\d{2}):(\d{2})[:]?(\d{2})?/;
     const parts = input.match(iso);
@@ -539,8 +579,8 @@ export const safeParseIsoDate = <T>(value: T): Date | T => {
 };
 
 /**
-* Classes
-*/
+ ** Classes
+ */
 
 export const getClassName = (instance: any): string | null => {
     if (isObject(instance) && isFunction(instance.constructor)) return instance.constructor.name;
@@ -551,7 +591,7 @@ export const getClassName = (instance: any): string | null => {
 
 export const getClassMethodName = (instance: any, method: Function): string | null => {
     if (
-        isUndefinedOrNull(instance) ||
+        !isDefined(instance) ||
         !(isObject(instance) || isFunction(instance)) ||
         !isFunction(method)
     ) return null;
@@ -581,7 +621,7 @@ export const className = (...args: any[]): string | undefined => {
     if (!isArray(args)) return undef;
     const finalClassName: string[] = [];
     args.forEach(item => {
-        if (isUndefinedOrNull(item)) return;
+        if (!isDefined(item)) return;
 
         if (isString(item)) {
             finalClassName.push(item);
@@ -606,8 +646,8 @@ export const isCollectionOf = <T = any>(array: T[], instanceOf: any): boolean =>
 };
 
 /**
-* Utilities
-*/
+ ** Utilities
+ */
 
 export const getObjectKeysDeep = (object: any, prefix: string = ''): string[] => {
     if (isNativeTypeObject(object) || !isObjectLike(object)) return [];
@@ -658,18 +698,18 @@ export const mapToDeepObject = (target: any, src: any, options: MapOptions = {
     };
     const internalOptions = options || defaultOptions;
 
-    if (isUndefinedOrNull(options.transformIsoToDate)) {
+    if (!isDefined(options.transformIsoToDate)) {
         internalOptions.transformIsoToDate = defaultOptions.transformIsoToDate;
     }
-    if (isUndefinedOrNull(options.strictMapping)) {
+    if (!isDefined(options.strictMapping)) {
         internalOptions.strictMapping = defaultOptions.strictMapping;
     }
-    if (isUndefinedOrNull(options.ignoreStrictMappingWhenNull)) {
+    if (!isDefined(options.ignoreStrictMappingWhenNull)) {
         internalOptions.ignoreStrictMappingWhenNull =
             defaultOptions.ignoreStrictMappingWhenNull;
     }
 
-    if (isUndefinedOrNull(options.allowDynamicObjects)) {
+    if (!isDefined(options.allowDynamicObjects)) {
         internalOptions.allowDynamicObjects = defaultOptions.allowDynamicObjects;
     }
 
@@ -765,6 +805,8 @@ export const setTimeout = <T>(handler: () => T, timeout?: number): Promise<T> =>
             reject(err);
         }
     });
+
+export const noop = (): void => { };
 
 /*
  ** Objects
