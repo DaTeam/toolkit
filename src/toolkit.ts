@@ -69,7 +69,7 @@ type DiffOptions = {
  ** Type checks
  */
 
-export const isDefined = (arg: any): boolean => arg !== undef && arg !== null;
+export const isDefined = <T>(arg: T): arg is NonNullable<T> => arg !== undef && arg !== null;
 export const isObject = (arg: any): arg is Object => fnObjectToString.call(arg) === '[object Object]';
 export const isString = (arg: any): arg is string =>
     (typeof arg === 'string' || (!isArray(arg) && isObjectLike(arg) && fnObjectToString.call(arg) == stringTag)); // eslint-disable-line eqeqeq
