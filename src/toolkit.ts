@@ -24,12 +24,8 @@ const boolTag = '[object Boolean]';
 
 let undef: undefined;
 
-function isObjectLike(arg: any): boolean {
-    return arg != null && typeof arg === 'object'; // eslint-disable-line eqeqeq
-}
-
-function innerMapToDeepObject(target: any, src: any, options: MapOptions): void {
-    if (!ToolKit.isObject(target) || !ToolKit.isObject(src)) return;
+const innerMapToDeepObject = (target: any, src: any, options: MapOptions): void => {
+    if (!isObject(target) || !isObject(src)) return;
 
     const srcKeys = Object.keys(src);
     const targetKeys = Object.keys(target);
@@ -37,14 +33,14 @@ function innerMapToDeepObject(target: any, src: any, options: MapOptions): void 
     targetKeys
         .filter(key => srcKeys.includes(key))
         .reduce((obj, key) => {
-            if (options.transformIsoToDate === true && ToolKit.isString(src[key])) {
-                const date = ToolKit.parseDate(src[key]);
+            if (options.transformIsoToDate === true && isString(src[key])) {
+                const date = parseDate(src[key]);
 
-                obj[key] = ToolKit.isNull(date) ? src[key] : date;
+                obj[key] = isNull(date) ? src[key] : date;
                 return obj;
             }
 
-            if (ToolKit.isNativeTypeObject(src[key]) ||
+            if (isNativeTypeObject(src[key]) ||
                 (!isObjectLike(src[key])) ||
                 (isObjectLike(src[key]) && options.allowDynamicObjects && Object.keys(obj[key]).length === 0)) {
                 obj[key] = src[key];
@@ -53,7 +49,7 @@ function innerMapToDeepObject(target: any, src: any, options: MapOptions): void 
 
             return obj;
         }, target);
-}
+};
 
 type MapOptions = {
     transformIsoToDate?: boolean;
@@ -69,623 +65,574 @@ type DiffOptions = {
     alternativeFormat?: (item: any) => any;
 };
 
-export default class ToolKit {
-    /**
-     * Type checks
-     */
-
-    static isDefined(arg: any): boolean {
-        return arg !== undef;
-    }
-
-    static isObject(arg: any): arg is Object {
-        return fnObjectToString.call(arg) === '[object Object]';
-    }
-
-    static isObjectLike = isObjectLike;
-
-    static isString(arg: any): arg is string {
-        return (typeof arg === 'string' || (!ToolKit.isArray(arg) && isObjectLike(arg) && fnObjectToString.call(arg) == stringTag)); // eslint-disable-line eqeqeq
-    }
-
-    static isFunction(arg: any): arg is Function {
-        return fnObjectToString.call(arg) === '[object Function]';
-    }
-
-    static isArray(arg: any): arg is any[] {
-        if (Array.isArray) return Array.isArray(arg);
-
-        return fnObjectToString.call(arg) === arrayTag;
-    }
-
-    static isBoolean(arg: any): arg is boolean {
-        return (
-            arg === true ||
-            arg === false ||
-            (isObjectLike(arg) && fnObjectToString.call(arg) === boolTag)
-        );
-    }
-
-    static isNumber(arg: any): arg is number {
-        return (
-            typeof arg === 'number' ||
-            (isObjectLike(arg) && fnObjectToString.call(arg) === numberTag)
-        );
-    }
-
-    static isNaN(arg: any): boolean {
-        return this.isNumber(arg) && arg != +arg; // eslint-disable-line eqeqeq
-    }
-
-    static isFloat(value: number): boolean {
-        return this.isNumber(value) && value % 1 !== 0;
-    }
-
-    static isDate(arg: any): arg is Date {
-        return (
-            (isObjectLike(arg) && fnObjectToString.call(arg) === dateTag) || false
-        );
-    }
-
-    static isValidDate(arg: any): boolean {
-        return ToolKit.isDate(arg) && !ToolKit.isNaN(arg.getTime());
-    }
-
-    static hasValue(arg: any): boolean {
-        return arg !== undef && arg !== null;
-    }
-
-    static isUndefined(arg: any): arg is undefined {
-        return arg === undef;
-    }
-
-    static isNull(arg: any): arg is null {
-        return arg === null;
-    }
-
-    static isUndefinedOrNull(arg: any): arg is undefined | null {
-        return arg === undef || arg === null;
-    }
-
-    static isNativeTypeObject(arg: any): boolean {
-        return (
-            ToolKit.isUndefined(arg) ||
-            ToolKit.isNull(arg) ||
-            ToolKit.isDate(arg) ||
-            ToolKit.isBoolean(arg) ||
-            ToolKit.isNumber(arg) ||
-            ToolKit.isString(arg) ||
-            ToolKit.isArray(arg) ||
-            ToolKit.isFunction(arg)
-        );
-    }
-
-    static isEmpty<T extends string | any[]>(arg: T): boolean {
-        if (!ToolKit.isString(arg) && !ToolKit.isArray(arg)) throw new TypeError('arg is not of a valid type');
-
-        return arg.length === 0;
-    }
-
-    static checkType<T = any>(arg: any, type: Type): arg is T {
-        if (type & Type.Undefined && this.isUndefined(arg)) return true;
-        if (type & Type.Null && this.isNull(arg)) return true;
-        if (type & Type.Boolean && this.isBoolean(arg)) return true;
-        if (type & Type.Function && this.isFunction(arg)) return true;
-
-        if (type & Type.Number && this.isNumber(arg)) {
-            if (type & Type.Valid) return !this.isNaN(arg);
-            return true;
-        }
-
-        if (type & Type.String && this.isString(arg)) {
-            if (type & Type.NonEmpty) return arg.length > 0;
-            return true;
-        }
-
-        if (type & Type.Date && this.isDate(arg)) {
-            if (type & Type.Valid) return this.isValidDate(arg);
-            return true;
-        }
-
-        if (type & Type.Object && this.isObject(arg)) {
-            if (type & Type.NonEmpty) return Object.keys(arg).length > 0;
-            return true;
-        }
-
-        if (type & Type.Array && this.isArray(arg)) {
-            if (type & Type.NonEmpty) return arg.length > 0;
-            return true;
-        }
-
-        return false;
-    }
-
-    static assertType<T = any>(arg: T, type: Type): T {
-        if (!this.checkType<T>(arg, type)) throw new Error('assertion failed');
-
-        return arg;
-    }
-
-    static computeForType<InputType, ComputeResult, DefaultValue extends any>(
-        arg: InputType,
-        condition: Type,
-        computeFn: (arg: InputType) => ComputeResult,
-        defaultValue: DefaultValue
-    ): ComputeResult | DefaultValue {
-        if (!this.checkType<InputType>(arg, condition)) return defaultValue;
-
-        return computeFn(arg);
-    }
-
-    static ternaryOfType<InputType, DefaultValue extends any>(
-        arg: InputType,
-        condition: Type,
-        defaultValue: DefaultValue
-    ): InputType | DefaultValue {
-        if (!this.checkType<InputType>(arg, condition)) return defaultValue;
-
-        return arg;
-    }
-
-
-    static assert(condition: unknown, msg?: string): asserts condition {
-        if (!condition) throw new AssertionError(msg);
-    }
-
-    static noop(): void { }
-
-    /**
-   * Array
-   */
-
-    static addRange(src: any[], newElements: any[]) {
-        ArrayProto.push.apply(src, newElements);
-    }
-
-    static clearCollection(collection: any[]) {
-        if (ToolKit.isArray(collection)) collection.splice(0, collection.length);
-    }
-
-    static diffCollection(
-        array: any[],
-        values: any[],
-        options?: DiffOptions
-    ): any[] {
-        const result: any[] = [];
-
-        if (!ToolKit.isArray(array) || !ToolKit.isArray(values) || !array.length) return result;
-
-        const internalOptions = options || {};
-        const { objectKey, predicate, format, alternativeFormat } = internalOptions;
-
-        let comparator: (item: any, array: any[]) => boolean;
-
-        if (ToolKit.isFunction(predicate)) comparator = predicate;
-        else comparator = (item, collection) => collection.includes(item);
-
-        array.forEach(obj => {
-            let transformedValue = obj;
-            if (ToolKit.isString(objectKey)) transformedValue = transformedValue[objectKey];
-
-            if (ToolKit.isFunction(format)) transformedValue = format(transformedValue);
-
-            if (comparator(transformedValue, values) === false) {
-                if (ToolKit.isFunction(alternativeFormat)) {
-                    transformedValue = obj;
-                    if (ToolKit.isString(objectKey)) transformedValue = transformedValue[objectKey];
-
-                    transformedValue = alternativeFormat(transformedValue);
-
-                    if (comparator(transformedValue, values)) return;
-                }
-
-                result.push(obj);
-            }
-        });
-
-        return result;
-    }
-
-    static findIndex<T>(array: T[], predicate: (item: T, index: number) => boolean) {
-        if (!ToolKit.isArray(array)) return -1;
-
-        for (let idx = 0; idx < array.length; idx++) {
-            if (predicate(array[idx], idx) === true) return idx;
-        }
-
-        return -1;
-    }
-
-    static find<T>(array: T[], predicate: (item: T, index: number) => boolean) {
-        if (!ToolKit.isArray(array)) return null;
-
-        for (let idx = 0; idx < array.length; idx++) {
-            if (predicate(array[idx], idx) === true) return array[idx];
-        }
-
-        return null;
-    }
-
-    static orderBy<T>(
-        array: T[],
-        propertyAccessor: string,
-        options?: { nullFirst?: boolean; ascending?: boolean }
-    ): void {
-        if (!ToolKit.isArray(array) || !ToolKit.isString(propertyAccessor)) {
-            const className = ToolKit.getClassName(ToolKit);
-            const method = ToolKit.getClassMethodName(ToolKit, ToolKit.orderBy);
-            throw new Error(`${className} -> ${method}: invalid parameters.`);
-        }
-
-        const internalOptions = { nullFirst: false, ascending: true };
-        if (ToolKit.hasValue(options) && ToolKit.isObject(options)) {
-            if (options.nullFirst === true) internalOptions.nullFirst = true;
-            if (options.ascending === false) internalOptions.ascending = false;
-        }
-
-        const nullOrderValue = internalOptions.nullFirst ? -1 : 1;
-        const ascOrderValue = internalOptions.ascending ? 1 : -1;
-
-        array.sort((itemA, itemB) => {
-            const aProperty = ToolKit.getPropertySafe(itemA, propertyAccessor);
-            const bProperty = ToolKit.getPropertySafe(itemB, propertyAccessor);
-
-            if (aProperty === null) return nullOrderValue * 1;
-            if (bProperty === null) return nullOrderValue * -1;
-            if (aProperty < bProperty) return ascOrderValue * -1;
-            if (aProperty > bProperty) return ascOrderValue * 1;
-
-            return 0;
-        });
-    }
-
-    static sortByProperty<T = any, PropertyT = any>(
-        array: T[],
-        propertyAccessor: string,
-        compareFn: (a: PropertyT, b: PropertyT) => number,
-        options?: { nullFirst?: boolean, ascending?: boolean }
-    ): void {
-        if (!ToolKit.isArray(array) || !ToolKit.isString(propertyAccessor) || !ToolKit.isFunction(compareFn)) {
-            const className = ToolKit.getClassName(ToolKit);
-            const method = ToolKit.getClassMethodName(ToolKit, ToolKit.sortByProperty);
-            throw new Error(`${className} -> ${method}: invalid parameters.`);
-        }
-
-        const internalOptions = { nullFirst: false, ascending: true };
-        if (ToolKit.hasValue(options) && ToolKit.isObject(options)) {
-            if (options.nullFirst === true) internalOptions.nullFirst = true;
-            if (options.ascending === false) internalOptions.ascending = false;
-        }
-
-        const nullOrderValue = internalOptions.nullFirst ? -1 : 1;
-        const ascOrderValue = internalOptions.ascending ? 1 : -1;
-
-        array.sort((aItem, bItem) => {
-            const aProperty = ToolKit.getPropertySafe(aItem, propertyAccessor);
-            const bProperty = ToolKit.getPropertySafe(bItem, propertyAccessor);
-
-            if (aProperty === null) return nullOrderValue * 1;
-            if (bProperty === null) return nullOrderValue * -1;
-
-            return ascOrderValue * compareFn(aProperty, bProperty);
-        });
-    }
-
-    static countCollection<T>(
-        array: T[],
-        predicate: (item: T, index: number) => boolean
-    ): number {
-        if (!ToolKit.isArray(array)) return -1;
-
-        if (!ToolKit.isFunction(predicate)) return array.length;
-
-        let count = 0;
-        for (let idx = 0; idx < array.length; idx++) {
-            if (predicate(array[idx], idx) === true) count += 1;
-        }
-
-        return count;
-    }
-
-    static removeFromCollection<T>(
-        array: T[],
-        predicate: (item: T, index: number) => boolean
-    ): boolean {
-        if (!ToolKit.isArray(array)) return false;
-        if (!ToolKit.isFunction(predicate)) return false;
-
-        for (let idx = 0; idx < array.length;) {
-            if (predicate(array[idx], idx) === true) array.splice(idx, 1);
-            else idx += 1;
-        }
-
+/**
+ * Type checks
+ */
+
+export const isDefined = (arg: any): boolean => arg !== undef;
+export const isObject = (arg: any): arg is Object => fnObjectToString.call(arg) === '[object Object]';
+export const isString = (arg: any): arg is string =>
+    (typeof arg === 'string' || (!isArray(arg) && isObjectLike(arg) && fnObjectToString.call(arg) == stringTag)); // eslint-disable-line eqeqeq
+
+export const isFunction = (arg: any): arg is Function => fnObjectToString.call(arg) === '[object Function]';
+
+export const isArray = (arg: any): arg is any[] => {
+    if (Array.isArray) return Array.isArray(arg);
+
+    return fnObjectToString.call(arg) === arrayTag;
+};
+
+export const isBoolean = (arg: any): arg is boolean =>
+    arg === true ||
+    arg === false ||
+    (isObjectLike(arg) && fnObjectToString.call(arg) === boolTag);
+
+export const isNumber = (arg: any): arg is number =>
+    typeof arg === 'number' ||
+    (isObjectLike(arg) && fnObjectToString.call(arg) === numberTag);
+
+export const isNaN = (arg: any): boolean => isNumber(arg) && arg != +arg; // eslint-disable-line eqeqeq
+export const isFloat = (value: number): boolean => isNumber(value) && value % 1 !== 0;
+export const isDate = (arg: any): arg is Date =>
+    (isObjectLike(arg) && fnObjectToString.call(arg) === dateTag) || false;
+
+export const isValidDate = (arg: any): boolean => isDate(arg) && !isNaN(arg.getTime());
+export const hasValue = (arg: any): boolean => arg !== undef && arg !== null;
+export const isUndefined = (arg: any): arg is undefined => arg === undef;
+export const isNull = (arg: any): arg is null => arg === null;
+export const isUndefinedOrNull = (arg: any): arg is undefined | null => arg === undef || arg === null;
+
+export const isObjectLike = (arg: any): boolean => arg != null && typeof arg === 'object'; // eslint-disable-line eqeqeq
+export const isNativeTypeObject = (arg: any): boolean =>
+    isUndefined(arg) ||
+    isNull(arg) ||
+    isDate(arg) ||
+    isBoolean(arg) ||
+    isNumber(arg) ||
+    isString(arg) ||
+    isArray(arg) ||
+    isFunction(arg);
+
+export const isEmpty = <T extends string | any[]>(arg: T): boolean => {
+    if (!isString(arg) && !isArray(arg)) throw new TypeError('arg is not of a valid type');
+
+    return arg.length === 0;
+};
+
+export const checkType = <T = any>(arg: any, type: Type): arg is T => {
+    if (type & Type.Undefined && isUndefined(arg)) return true;
+    if (type & Type.Null && isNull(arg)) return true;
+    if (type & Type.Boolean && isBoolean(arg)) return true;
+    if (type & Type.Function && isFunction(arg)) return true;
+
+    if (type & Type.Number && isNumber(arg)) {
+        if (type & Type.Valid) return !isNaN(arg);
         return true;
     }
 
-    static removeAt<T>(array: T[], index: number): boolean {
-        if (!ToolKit.isArray(array)) return false;
-
-        array.splice(index, 1);
+    if (type & Type.String && isString(arg)) {
+        if (type & Type.NonEmpty) return arg.length > 0;
         return true;
     }
 
-    /**
-   * String
-   */
-
-    static fixedLenInteger(value: number, length: number): string {
-        return (Array(length).join('0') + value).slice(-length);
+    if (type & Type.Date && isDate(arg)) {
+        if (type & Type.Valid) return isValidDate(arg);
+        return true;
     }
 
-    static fixedLenString(value: string, length: number): string {
-        return (value + Array(length).join(' ')).slice(0, length);
+    if (type & Type.Object && isObject(arg)) {
+        if (type & Type.NonEmpty) return Object.keys(arg).length > 0;
+        return true;
     }
 
-    static toCamelCase(value: string): string {
-        if (!ToolKit.isString(value)) throw new TypeError('value is not valid');
-
-        return value
-            .replace(/\s(.)/g, $1 => $1.toUpperCase())
-            .replace(/\s/g, '')
-            .replace(/^(.)/, $1 => $1.toLowerCase());
+    if (type & Type.Array && isArray(arg)) {
+        if (type & Type.NonEmpty) return arg.length > 0;
+        return true;
     }
 
-    /**
-     * Number
-     */
+    return false;
+};
 
-    static randomNumber(minValue: number, maxValue: number): number {
-        return Math.floor(Math.random() * maxValue + minValue);
-    }
+export const assertType = <T = any>(arg: T, type: Type): T => {
+    if (!checkType<T>(arg, type)) throw new Error('assertion failed');
 
-    /**
-     * Date
-     */
+    return arg;
+};
 
-    static dateOnly(date: Date): Date {
-        if (!ToolKit.isValidDate(date)) throw new TypeError('date is not valid');
+export const computeForType = <InputType, ComputeResult, DefaultValue extends any>(
+    arg: InputType,
+    condition: Type,
+    computeFn: (arg: InputType) => ComputeResult,
+    defaultValue: DefaultValue
+): ComputeResult | DefaultValue => {
+    if (!checkType<InputType>(arg, condition)) return defaultValue;
 
-        return new Date(date.toDateString());
-    }
+    return computeFn(arg);
+};
 
-    static formatDate: (date: Date, customFn?: (year: string, month: string, day: string) => string) => string =
-        (date, customFn = (year, month, day) => `${day}/${month}/${year}`) => {
-            if (!ToolKit.isValidDate(date)) throw new TypeError('date is not valid');
-            if (!ToolKit.isFunction(customFn)) throw new TypeError('customFn is not valid');
+export const ternaryOfType = <InputType, DefaultValue extends any>(
+    arg: InputType,
+    condition: Type,
+    defaultValue: DefaultValue
+): InputType | DefaultValue => {
+    if (!checkType<InputType>(arg, condition)) return defaultValue;
 
-            const day = ToolKit.fixedLenInteger(date.getDate(), 2);
-            const month = ToolKit.fixedLenInteger(date.getMonth() + 1, 2);
-            const year = ToolKit.fixedLenInteger(date.getFullYear(), 4);
-            return customFn(year, month, day);
-        };
+    return arg;
+};
 
-    static formatHour: (value: Date | number, customFn?: (h: string, m: string, s: string) => string) => string =
-        (value, customFn = (hour, minute, second) => `${hour}:${minute}:${second}`) => {
-            if (ToolKit.isUndefinedOrNull(value)) throw new TypeError('value is not valid');
-            if (!ToolKit.isFunction(customFn)) throw new TypeError('customFn is not valid');
 
-            let hour;
-            let minute;
-            let second;
+export const assert = (condition: unknown, msg?: string): asserts condition => {
+    if (!condition) throw new AssertionError(msg);
+};
 
-            if (ToolKit.isDate(value) && ToolKit.isValidDate(value)) {
-                hour = value.getHours();
-                minute = value.getMinutes();
-                second = value.getSeconds();
+export const noop = (): void => { };
+
+/**
+* Array
+*/
+
+export const addRange = (src: any[], newElements: any[]) => {
+    ArrayProto.push.apply(src, newElements);
+};
+
+export const clearCollection = (collection: any[]) => {
+    if (isArray(collection)) collection.splice(0, collection.length);
+};
+
+export const diffCollection = (
+    array: any[],
+    values: any[],
+    options?: DiffOptions
+): any[] => {
+    const result: any[] = [];
+
+    if (!isArray(array) || !isArray(values) || !array.length) return result;
+
+    const internalOptions = options || {};
+    const { objectKey, predicate, format, alternativeFormat } = internalOptions;
+
+    let comparator: (item: any, array: any[]) => boolean;
+
+    if (isFunction(predicate)) comparator = predicate;
+    else comparator = (item, collection) => collection.includes(item);
+
+    array.forEach(obj => {
+        let transformedValue = obj;
+        if (isString(objectKey)) transformedValue = transformedValue[objectKey];
+
+        if (isFunction(format)) transformedValue = format(transformedValue);
+
+        if (comparator(transformedValue, values) === false) {
+            if (isFunction(alternativeFormat)) {
+                transformedValue = obj;
+                if (isString(objectKey)) transformedValue = transformedValue[objectKey];
+
+                transformedValue = alternativeFormat(transformedValue);
+
+                if (comparator(transformedValue, values)) return;
             }
 
-            if (ToolKit.isNumber(value) && !ToolKit.isNaN(value)) {
-                hour = Math.floor(value / 3600);
-                minute = Math.floor((value - hour * 3600) / 60);
-                second = value - hour * 3600 - minute * 60;
-            }
+            result.push(obj);
+        }
+    });
 
-            if (ToolKit.isNumber(hour) && ToolKit.isNumber(minute) && ToolKit.isNumber(second)) {
-                hour = ToolKit.fixedLenInteger(hour, 2);
-                minute = ToolKit.fixedLenInteger(minute, 2);
-                second = ToolKit.fixedLenInteger(second, 2);
+    return result;
+};
 
-                return customFn(hour, minute, second);
-            }
+export const findIndex = <T>(array: T[], predicate: (item: T, index: number) => boolean) => {
+    if (!isArray(array)) return -1;
 
-            throw new TypeError('type not supported');
+    for (let idx = 0; idx < array.length; idx++) {
+        if (predicate(array[idx], idx) === true) return idx;
+    }
+
+    return -1;
+};
+
+export const find = <T>(array: T[], predicate: (item: T, index: number) => boolean) => {
+    if (!isArray(array)) return null;
+
+    for (let idx = 0; idx < array.length; idx++) {
+        if (predicate(array[idx], idx) === true) return array[idx];
+    }
+
+    return null;
+};
+
+export const orderBy = <T>(
+    array: T[],
+    propertyAccessor: string,
+    options?: { nullFirst?: boolean; ascending?: boolean }
+): void => {
+    if (!isArray(array) || !isString(propertyAccessor)) {
+        throw new Error(`Toolkit -> ${orderBy.name}: invalid parameters.`);
+    }
+
+    const internalOptions = { nullFirst: false, ascending: true };
+    if (hasValue(options) && isObject(options)) {
+        if (options.nullFirst === true) internalOptions.nullFirst = true;
+        if (options.ascending === false) internalOptions.ascending = false;
+    }
+
+    const nullOrderValue = internalOptions.nullFirst ? -1 : 1;
+    const ascOrderValue = internalOptions.ascending ? 1 : -1;
+
+    array.sort((itemA, itemB) => {
+        const aProperty = getPropertySafe(itemA, propertyAccessor);
+        const bProperty = getPropertySafe(itemB, propertyAccessor);
+
+        if (aProperty === null) return nullOrderValue * 1;
+        if (bProperty === null) return nullOrderValue * -1;
+        if (aProperty < bProperty) return ascOrderValue * -1;
+        if (aProperty > bProperty) return ascOrderValue * 1;
+
+        return 0;
+    });
+};
+
+export const sortByProperty = <T = any, PropertyT = any>(
+    array: T[],
+    propertyAccessor: string,
+    compareFn: (a: PropertyT, b: PropertyT) => number,
+    options?: { nullFirst?: boolean, ascending?: boolean }
+): void => {
+    if (!isArray(array) || !isString(propertyAccessor) || !isFunction(compareFn)) {
+        throw new Error(`Toolkit -> ${sortByProperty.name}: invalid parameters.`);
+    }
+
+    const internalOptions = { nullFirst: false, ascending: true };
+    if (hasValue(options) && isObject(options)) {
+        if (options.nullFirst === true) internalOptions.nullFirst = true;
+        if (options.ascending === false) internalOptions.ascending = false;
+    }
+
+    const nullOrderValue = internalOptions.nullFirst ? -1 : 1;
+    const ascOrderValue = internalOptions.ascending ? 1 : -1;
+
+    array.sort((aItem, bItem) => {
+        const aProperty = getPropertySafe(aItem, propertyAccessor);
+        const bProperty = getPropertySafe(bItem, propertyAccessor);
+
+        if (aProperty === null) return nullOrderValue * 1;
+        if (bProperty === null) return nullOrderValue * -1;
+
+        return ascOrderValue * compareFn(aProperty, bProperty);
+    });
+};
+
+export const countCollection = <T>(
+    array: T[],
+    predicate: (item: T, index: number) => boolean
+): number => {
+    if (!isArray(array)) return -1;
+
+    if (!isFunction(predicate)) return array.length;
+
+    let count = 0;
+    for (let idx = 0; idx < array.length; idx++) {
+        if (predicate(array[idx], idx) === true) count += 1;
+    }
+
+    return count;
+};
+
+export const removeFromCollection = <T>(
+    array: T[],
+    predicate: (item: T, index: number) => boolean
+): boolean => {
+    if (!isArray(array)) return false;
+    if (!isFunction(predicate)) return false;
+
+    for (let idx = 0; idx < array.length;) {
+        if (predicate(array[idx], idx) === true) array.splice(idx, 1);
+        else idx += 1;
+    }
+
+    return true;
+};
+
+export const removeAt = <T>(array: T[], index: number): boolean => {
+    if (!isArray(array)) return false;
+
+    array.splice(index, 1);
+    return true;
+};
+
+/**
+* String
+*/
+
+export const fixedLenInteger = (value: number, length: number): string =>
+    (Array(length).join('0') + value).slice(-length);
+
+export const fixedLenString = (value: string, length: number): string =>
+    (value + Array(length).join(' ')).slice(0, length);
+
+export const toCamelCase = (value: string): string => {
+    if (!isString(value)) throw new TypeError('value is not valid');
+
+    return value
+        .replace(/\s(.)/g, $1 => $1.toUpperCase())
+        .replace(/\s/g, '')
+        .replace(/^(.)/, $1 => $1.toLowerCase());
+};
+
+/**
+ * Number
+ */
+
+export const randomNumber = (minValue: number, maxValue: number): number =>
+    Math.floor(Math.random() * maxValue + minValue);
+
+/**
+ * Date
+ */
+
+export const dateOnly = (date: Date): Date => {
+    if (!isValidDate(date)) throw new TypeError('date is not valid');
+
+    return new Date(date.toDateString());
+};
+
+export const formatDate: (date: Date, customFn?: (year: string, month: string, day: string) => string) => string =
+    (date, customFn = (year, month, day) => `${day}/${month}/${year}`) => {
+        if (!isValidDate(date)) throw new TypeError('date is not valid');
+        if (!isFunction(customFn)) throw new TypeError('customFn is not valid');
+
+        const day = fixedLenInteger(date.getDate(), 2);
+        const month = fixedLenInteger(date.getMonth() + 1, 2);
+        const year = fixedLenInteger(date.getFullYear(), 4);
+        return customFn(year, month, day);
+    };
+
+export const formatHour: (value: Date | number, customFn?: (h: string, m: string, s: string) => string) => string =
+    (value, customFn = (hour, minute, second) => `${hour}:${minute}:${second}`) => {
+        if (isUndefinedOrNull(value)) throw new TypeError('value is not valid');
+        if (!isFunction(customFn)) throw new TypeError('customFn is not valid');
+
+        let hour;
+        let minute;
+        let second;
+
+        if (isDate(value) && isValidDate(value)) {
+            hour = value.getHours();
+            minute = value.getMinutes();
+            second = value.getSeconds();
         }
 
-    static dateToFormat: (value: Date, format?: string) => string =
-        (value, format = 'dd/MM/yyyy') => {
-            try {
-                let formattedDate = format;
-                formattedDate = ToolKit
-                    .formatDate(value, (year, month, day) => formattedDate
-                        .replace('dd', day)
-                        .replace('MM', month)
-                        .replace('yyyy', year));
-                formattedDate = ToolKit
-                    .formatHour(value, (hour, minute, second) => formattedDate
-                        .replace('HH', hour)
-                        .replace('mm', minute)
-                        .replace('ss', second));
-                return formattedDate;
-            }
-            catch (err) {
-                // ignore
-            }
-
-            return format;
+        if (isNumber(value) && !isNaN(value)) {
+            hour = Math.floor(value / 3600);
+            minute = Math.floor((value - hour * 3600) / 60);
+            second = value - hour * 3600 - minute * 60;
         }
 
-    static parseDate(input: string): Date | null {
-        const iso = /(\d{2})[-\/]{1}(\d{2})[-\/]{1}(\d{4})( (\d{2}):(\d{2})[:]?(\d{2})?)?/; // eslint-disable-line no-useless-escape
-        const parts = input.match(iso);
+        if (isNumber(hour) && isNumber(minute) && isNumber(second)) {
+            hour = fixedLenInteger(hour, 2);
+            minute = fixedLenInteger(minute, 2);
+            second = fixedLenInteger(second, 2);
 
-        if (ToolKit.isArray(parts)) {
-            for (let idx = parts.length - 1; idx >= 0; idx--) {
-                if (!ToolKit.isString(parts[idx])) parts.pop();
-                else break;
-            }
-
-            if (parts.length === 8) {
-                return new Date(
-                    parseInt(parts[3], 10),
-                    parseInt(parts[2], 10) - 1,
-                    parseInt(parts[1], 10),
-                    parseInt(parts[5], 10),
-                    parseInt(parts[6], 10),
-                    parseInt(parts[7], 10)
-                );
-            }
-            if (parts.length === 7) {
-                return new Date(
-                    parseInt(parts[3], 10),
-                    parseInt(parts[2], 10) - 1,
-                    parseInt(parts[1], 10),
-                    parseInt(parts[5], 10),
-                    parseInt(parts[6], 10),
-                    0
-                );
-            }
-            if (parts.length === 4) {
-                return new Date(
-                    parseInt(parts[3], 10),
-                    parseInt(parts[2], 10) - 1,
-                    parseInt(parts[1], 10)
-                );
-            }
+            return customFn(hour, minute, second);
         }
 
-        return null;
-    }
+        throw new TypeError('type not supported');
+    };
 
-    static parseHour(input: string): Date | null {
-        if (ToolKit.isUndefinedOrNull(input)) return null;
-
-        const iso = /(\d{2}):(\d{2})[:]?(\d{2})?/;
-        const parts = input.match(iso);
-
-        if (ToolKit.isArray(parts)) {
-            for (let idx = parts.length - 1; idx >= 0; idx--) {
-                if (!ToolKit.isString(parts[idx])) parts.pop();
-                else break;
-            }
-
-            if (parts.length > 2) {
-                const date = new Date();
-                date.setHours(parseInt(parts[1], 10));
-                date.setMinutes(parseInt(parts[2], 10));
-
-                if (parts.length > 3) date.setSeconds(parseInt(parts[3], 10));
-                else date.setSeconds(0);
-
-                return date;
-            }
+export const dateToFormat: (value: Date, format?: string) => string =
+    (value, format = 'dd/MM/yyyy') => {
+        try {
+            let formattedDate = format;
+            formattedDate =
+                formatDate(value, (year, month, day) => formattedDate
+                    .replace('dd', day)
+                    .replace('MM', month)
+                    .replace('yyyy', year));
+            formattedDate =
+                formatHour(value, (hour, minute, second) => formattedDate
+                    .replace('HH', hour)
+                    .replace('mm', minute)
+                    .replace('ss', second));
+            return formattedDate;
+        }
+        catch (err) {
+            // ignore
         }
 
-        return null;
-    }
+        return format;
+    };
 
-    static safeParseIsoDate<T>(value: T): Date | T {
-        if (ToolKit.isString(value)) {
-            const date = new Date(value);
-            if (ToolKit.isValidDate(date)) return date!;
+export const parseDate = (input: string): Date | null => {
+    const iso = /(\d{2})[-\/]{1}(\d{2})[-\/]{1}(\d{4})( (\d{2}):(\d{2})[:]?(\d{2})?)?/; // eslint-disable-line no-useless-escape
+    const parts = input.match(iso);
+
+    if (isArray(parts)) {
+        for (let idx = parts.length - 1; idx >= 0; idx--) {
+            if (!isString(parts[idx])) parts.pop();
+            else break;
         }
 
-        return value;
+        if (parts.length === 8) {
+            return new Date(
+                parseInt(parts[3], 10),
+                parseInt(parts[2], 10) - 1,
+                parseInt(parts[1], 10),
+                parseInt(parts[5], 10),
+                parseInt(parts[6], 10),
+                parseInt(parts[7], 10)
+            );
+        }
+        if (parts.length === 7) {
+            return new Date(
+                parseInt(parts[3], 10),
+                parseInt(parts[2], 10) - 1,
+                parseInt(parts[1], 10),
+                parseInt(parts[5], 10),
+                parseInt(parts[6], 10),
+                0
+            );
+        }
+        if (parts.length === 4) {
+            return new Date(
+                parseInt(parts[3], 10),
+                parseInt(parts[2], 10) - 1,
+                parseInt(parts[1], 10)
+            );
+        }
     }
 
-    /**
-   * Classes
-   */
+    return null;
+};
 
-    static getClassName(instance: any): string | null {
-        if (ToolKit.isObject(instance) && ToolKit.isFunction(instance.constructor)) return instance.constructor.name;
-        if (ToolKit.isFunction(instance)) return instance.name;
+export const parseHour = (input: string): Date | null => {
+    if (isUndefinedOrNull(input)) return null;
 
-        return null;
+    const iso = /(\d{2}):(\d{2})[:]?(\d{2})?/;
+    const parts = input.match(iso);
+
+    if (isArray(parts)) {
+        for (let idx = parts.length - 1; idx >= 0; idx--) {
+            if (!isString(parts[idx])) parts.pop();
+            else break;
+        }
+
+        if (parts.length > 2) {
+            const date = new Date();
+            date.setHours(parseInt(parts[1], 10));
+            date.setMinutes(parseInt(parts[2], 10));
+
+            if (parts.length > 3) date.setSeconds(parseInt(parts[3], 10));
+            else date.setSeconds(0);
+
+            return date;
+        }
     }
 
-    static getClassMethodName(instance: any, method: Function): string | null {
-        if (
-            ToolKit.isUndefinedOrNull(instance) ||
-            !(ToolKit.isObject(instance) || ToolKit.isFunction(instance)) ||
-            !ToolKit.isFunction(method)
-        ) return null;
+    return null;
+};
 
-        let result = null;
-        [
-            ...Object.getOwnPropertyNames(Object.getPrototypeOf(instance)),
-            ...Object.keys(instance)
-        ]
-            .filter((key, index, context) =>
-                context.indexOf(key) === index &&
-                !['caller', 'callee', 'arguments'].includes(key))
-            .some(key => {
-                if (instance[key] === method) {
-                    result = key;
-                    return true;
+export const safeParseIsoDate = <T>(value: T): Date | T => {
+    if (isString(value)) {
+        const date = new Date(value);
+        if (isValidDate(date)) return date!;
+    }
+
+    return value;
+};
+
+/**
+* Classes
+*/
+
+export const getClassName = (instance: any): string | null => {
+    if (isObject(instance) && isFunction(instance.constructor)) return instance.constructor.name;
+    if (isFunction(instance)) return instance.name;
+
+    return null;
+};
+
+export const getClassMethodName = (instance: any, method: Function): string | null => {
+    if (
+        isUndefinedOrNull(instance) ||
+        !(isObject(instance) || isFunction(instance)) ||
+        !isFunction(method)
+    ) return null;
+
+    let result = null;
+    [
+        ...Object.getOwnPropertyNames(Object.getPrototypeOf(instance)),
+        ...Object.keys(instance)
+    ]
+        .filter((key, index, context) =>
+            context.indexOf(key) === index &&
+            !['caller', 'callee', 'arguments'].includes(key))
+        .some(key => {
+            if (instance[key] === method) {
+                result = key;
+                return true;
+            }
+
+            return false;
+        });
+
+    return result;
+};
+
+// Previously className
+export const className = (...args: any[]): string | undefined => {
+    if (!isArray(args)) return undef;
+    const finalClassName: string[] = [];
+    args.forEach(item => {
+        if (isUndefinedOrNull(item)) return;
+
+        if (isString(item)) {
+            finalClassName.push(item);
+        }
+        else {
+            Object.keys(item).forEach((key: string) => {
+                if (item[key]) {
+                    finalClassName.push(key);
                 }
-
-                return false;
             });
-
-        return result;
-    }
-
-    // Previously className
-    static className(...args: any[]): string | undefined {
-        if (!ToolKit.isArray(args)) return undef;
-        const finalClassName: string[] = [];
-        args.forEach(item => {
-            if (ToolKit.isUndefinedOrNull(item)) return;
-
-            if (ToolKit.isString(item)) {
-                finalClassName.push(item);
-            }
-            else {
-                Object.keys(item).forEach((key: string) => {
-                    if (item[key]) {
-                        finalClassName.push(key);
-                    }
-                });
-            }
-        });
-        return finalClassName.length > 0 ? finalClassName.join(' ') : undef;
-    }
-
-    static isCollectionOf<T = any>(array: T[], instanceOf: any): boolean {
-        for (let idx = 0; idx < array.length; idx++) {
-            if (!(array[idx] instanceof instanceOf)) return false;
         }
+    });
+    return finalClassName.length > 0 ? finalClassName.join(' ') : undef;
+};
 
-        return true;
+export const isCollectionOf = <T = any>(array: T[], instanceOf: any): boolean => {
+    for (let idx = 0; idx < array.length; idx++) {
+        if (!(array[idx] instanceof instanceOf)) return false;
     }
 
-    /**
-   * Utilities
-   */
+    return true;
+};
 
-    static getObjectKeysDeep(object: any, prefix: string = ''): string[] {
-        if (ToolKit.isNativeTypeObject(object) || !isObjectLike(object)) return [];
+/**
+* Utilities
+*/
 
-        const keys: string[] = [];
-        let internalPrefix = prefix;
-        if (internalPrefix.length > 0) internalPrefix += '.';
+export const getObjectKeysDeep = (object: any, prefix: string = ''): string[] => {
+    if (isNativeTypeObject(object) || !isObjectLike(object)) return [];
 
-        Object.keys(object).forEach((prop: string) => {
-            const propName = internalPrefix + prop;
-            keys.push(propName);
-            if (!ToolKit.isNativeTypeObject(object[prop]) && isObjectLike(object)) {
-                keys.push(...ToolKit.getObjectKeysDeep(object[prop], propName));
-            }
-        });
+    const keys: string[] = [];
+    let internalPrefix = prefix;
+    if (internalPrefix.length > 0) internalPrefix += '.';
 
-        return keys;
-    }
+    Object.keys(object).forEach((prop: string) => {
+        const propName = internalPrefix + prop;
+        keys.push(propName);
+        if (!isNativeTypeObject(object[prop]) && isObjectLike(object)) {
+            keys.push(...getObjectKeysDeep(object[prop], propName));
+        }
+    });
 
-    static mapToShallowObject(target: any, src: any, filterPredicate?: (key: string, value: any) => boolean): void {
-        if (!ToolKit.isObject(target) || !ToolKit.isObject(src)) return;
+    return keys;
+};
+
+export const mapToShallowObject =
+    (target: any, src: any, filterPredicate?: (key: string, value: any) => boolean): void => {
+        if (!isObject(target) || !isObject(src)) return;
 
         let predicate = (() => true) as (key: string, value: any) => boolean;
-        if (ToolKit.isFunction(filterPredicate)) predicate = filterPredicate as (key: string, value: any) => boolean;
+        if (isFunction(filterPredicate)) predicate = filterPredicate as (key: string, value: any) => boolean;
 
         Object.keys(src)
             .filter(key => Object.keys(target).includes(key))
@@ -694,159 +641,150 @@ export default class ToolKit {
 
                 return obj;
             }, target);
-    }
+    };
 
-    static mapToDeepObject(target: any, src: any, options: MapOptions = {
+export const mapToDeepObject = (target: any, src: any, options: MapOptions = {
+    transformIsoToDate: false,
+    strictMapping: false,
+    ignoreStrictMappingWhenNull: true,
+    allowDynamicObjects: false
+}): void => {
+    if (!isObject(target) || !isObject(src)) return;
+    const defaultOptions = {
         transformIsoToDate: false,
         strictMapping: false,
         ignoreStrictMappingWhenNull: true,
         allowDynamicObjects: false
-    }): void {
-        if (!ToolKit.isObject(target) || !ToolKit.isObject(src)) return;
-        const defaultOptions = {
-            transformIsoToDate: false,
-            strictMapping: false,
-            ignoreStrictMappingWhenNull: true,
-            allowDynamicObjects: false
-        };
-        const internalOptions = options || defaultOptions;
+    };
+    const internalOptions = options || defaultOptions;
 
-        if (ToolKit.isUndefinedOrNull(options.transformIsoToDate)) {
-            internalOptions.transformIsoToDate = defaultOptions.transformIsoToDate;
-        }
-        if (ToolKit.isUndefinedOrNull(options.strictMapping)) {
-            internalOptions.strictMapping = defaultOptions.strictMapping;
-        }
-        if (ToolKit.isUndefinedOrNull(options.ignoreStrictMappingWhenNull)) {
-            internalOptions.ignoreStrictMappingWhenNull =
-                defaultOptions.ignoreStrictMappingWhenNull;
-        }
+    if (isUndefinedOrNull(options.transformIsoToDate)) {
+        internalOptions.transformIsoToDate = defaultOptions.transformIsoToDate;
+    }
+    if (isUndefinedOrNull(options.strictMapping)) {
+        internalOptions.strictMapping = defaultOptions.strictMapping;
+    }
+    if (isUndefinedOrNull(options.ignoreStrictMappingWhenNull)) {
+        internalOptions.ignoreStrictMappingWhenNull =
+            defaultOptions.ignoreStrictMappingWhenNull;
+    }
 
-        if (ToolKit.isUndefinedOrNull(options.allowDynamicObjects)) {
-            internalOptions.allowDynamicObjects = defaultOptions.allowDynamicObjects;
-        }
+    if (isUndefinedOrNull(options.allowDynamicObjects)) {
+        internalOptions.allowDynamicObjects = defaultOptions.allowDynamicObjects;
+    }
 
-        if (internalOptions.strictMapping === true) {
-            const diffOptions =
-                internalOptions.ignoreStrictMappingWhenNull === true
-                    ? {
-                        alternativeFormat: (item: any) => {
-                            if (ToolKit.isString(item)) return item.split('.')[0];
-                            return item;
-                        }
+    if (internalOptions.strictMapping === true) {
+        const diffOptions =
+            internalOptions.ignoreStrictMappingWhenNull === true
+                ? {
+                    alternativeFormat: (item: any) => {
+                        if (isString(item)) return item.split('.')[0];
+                        return item;
                     }
-                    : undef;
-            const missingProperties = ToolKit.diffCollection(
-                ToolKit.getObjectKeysDeep(target),
-                ToolKit.getObjectKeysDeep(src),
-                diffOptions
-            );
-            if (missingProperties.length > 0) {
-                throw new Error(`${ToolKit.getClassName(ToolKit)} -> ${ToolKit.getClassMethodName(
-                    ToolKit,
-                    ToolKit.mapToDeepObject
-                )}: source object's properties doen't match the target object: ${missingProperties.join(', ')}.`);
-            }
+                }
+                : undef;
+        const missingProperties = diffCollection(
+            getObjectKeysDeep(target),
+            getObjectKeysDeep(src),
+            diffOptions
+        );
+        if (missingProperties.length > 0) {
+            throw new Error(`Toolkit -> ${mapToDeepObject.name}: source object's properties doen't match the target object: ${missingProperties.join(', ')}.`);
         }
-
-        innerMapToDeepObject(target, src, internalOptions);
     }
 
-    static getPropertySafe(obj: any, propertyAccessor: string): any | undefined {
-        if (!ToolKit.isString(propertyAccessor)) return null;
-        const retValue = propertyAccessor
-            .split('.')
-            .reduce((acc, part) => acc && acc[part], obj);
+    innerMapToDeepObject(target, src, internalOptions);
+};
 
-        return retValue || null;
-    }
+export const getPropertySafe = (obj: any, propertyAccessor: string): any | undefined => {
+    if (!isString(propertyAccessor)) return null;
+    const retValue = propertyAccessor
+        .split('.')
+        .reduce((acc, part) => acc && acc[part], obj);
 
-    static cast<T>(arg: any): T {
-        return arg as T;
-    }
+    return retValue || null;
+};
 
-    static safeJsonReplacer(_key: any, value: any) {
-        if (ToolKit.isNaN(value)) return 'NaN';
-        if (value === Infinity) return 'Infinity';
-        if (value === -Infinity) return '-Infinity';
-        if (ToolKit.isString(value)) {
-            const matches = value.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
-            if (ToolKit.isArray(matches) && ToolKit.isDate(ToolKit.safeParseIsoDate(value))) {
-                return `$\{DATE_${value}\}`; // eslint-disable-line no-useless-escape
-            }
+export const cast = <T>(arg: any): T => arg as T;
+
+export const safeJsonReplacer = (_key: any, value: any) => {
+    if (isNaN(value)) return 'NaN';
+    if (value === Infinity) return 'Infinity';
+    if (value === -Infinity) return '-Infinity';
+    if (isString(value)) {
+        const matches = value.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+        if (isArray(matches) && isDate(safeParseIsoDate(value))) {
+            return `$\{DATE_${value}\}`; // eslint-disable-line no-useless-escape
         }
-
-        return value;
     }
 
-    static safeJsonReviver(_key: any, value: any) {
-        if (value === 'NaN') return NaN;
-        if (value === 'Infinity') return Infinity;
-        if (value === '-Infinity') return -Infinity;
+    return value;
+};
 
-        if (ToolKit.isString(value)) {
-            const match = value.match(/\$\{DATE_(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)\}/);
-            if (ToolKit.isArray(match) && match.length >= 2) return ToolKit.safeParseIsoDate(match[1]);
-        }
+export const safeJsonReviver = (_key: any, value: any) => {
+    if (value === 'NaN') return NaN;
+    if (value === 'Infinity') return Infinity;
+    if (value === '-Infinity') return -Infinity;
 
-        return value;
+    if (isString(value)) {
+        const match = value.match(/\$\{DATE_(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)\}/);
+        if (isArray(match) && match.length >= 2) return safeParseIsoDate(match[1]);
     }
 
-    static toJSON(value: any): string {
-        return JSON.stringify(value, ToolKit.safeJsonReplacer);
-    }
+    return value;
+};
 
-    static fromJSON<T = any>(value: string): T | null {
+export const toJSON = (value: any): string => JSON.stringify(value, safeJsonReplacer);
+
+export const fromJSON = <T = any>(value: string): T | null => {
+    try {
+        return JSON.parse(value, safeJsonReviver);
+    }
+    catch (error) {
+        return null;
+    }
+};
+
+export const quickClone = <T>(arg: T): T | null => {
+    try {
+        return JSON.parse(JSON.stringify(arg, safeJsonReplacer), safeJsonReviver);
+    }
+    catch (error) {
+        return null;
+    }
+};
+
+// type Timeout
+
+export const setTimeout = <T>(handler: () => T, timeout?: number): Promise<T> =>
+    new Promise((resolve, reject) => {
         try {
-            return JSON.parse(value, ToolKit.safeJsonReviver);
+            setTimeout(() => resolve(handler()), timeout!);
         }
-        catch (error) {
-            return null;
+        catch (err) {
+            reject(err);
         }
-    }
+    });
 
-    static quickClone<T>(arg: T): T | null {
-        try {
-            return JSON.parse(JSON.stringify(arg, ToolKit.safeJsonReplacer), ToolKit.safeJsonReviver);
-        }
-        catch (error) {
-            return null;
-        }
-    }
+/*
+ ** Objects
+ */
 
-    // type Timeout
+export const hasProperty = (obj: any, prop: string | number): boolean => {
+    if (!isObject(obj)) throw new TypeError('obj is not valid');
+    if (!isString(prop) && !isNumber(prop)) throw new TypeError('prop is not valid');
 
-    static setTimeout<T>(handler: () => T, timeout?: number): Promise<T> {
-        return new Promise((resolve, reject) => {
-            try {
-                setTimeout(() => resolve(handler()), timeout!);
-            }
-            catch (err) {
-                reject(err);
-            }
-        });
-    }
+    return Object.prototype.hasOwnProperty.call(obj, prop);
+};
 
-    /*
-     ** Objects
-     */
+// Encapsulate the idea of passing a new object as the first parameter
+// to Object.assign to ensure we correctly copy data instead of mutating
+export const pureObjectAssign = (...values: any[]): any | null => {
+    if (!isArray(values)) return null;
+    if (values.some(val => !isObject(val))) return null;
 
-    static hasProperty(obj: any, prop: string | number): boolean {
-        if (!ToolKit.isObject(obj)) throw new TypeError('obj is not valid');
-        if (!ToolKit.isString(prop) && !ToolKit.isNumber(prop)) throw new TypeError('prop is not valid');
-
-        return Object.prototype.hasOwnProperty.call(obj, prop);
-    }
-
-    // Encapsulate the idea of passing a new object as the first parameter
-    // to Object.assign to ensure we correctly copy data instead of mutating
-    static pureObjectAssign(...values: any[]): any | null {
-        if (!ToolKit.isArray(values)) return null;
-        if (values.some(val => !ToolKit.isObject(val))) return null;
-
-        return Object.assign({}, ...values);
-    }
-}
+    return Object.assign({}, ...values);
+};
 
 export class TimeoutPromise<T> {
     private _promise: Promise<T>;
@@ -963,7 +901,7 @@ Date.prototype.getEndOfMonth = Date.prototype.getEndOfMonth ||
 
 Date.prototype.updateTime = Date.prototype.updateTime ||
     function updateTime(this: Date, time: Date): void {
-        if (!ToolKit.isValidDate(this)) return;
+        if (!isValidDate(this)) return;
 
         this.setHours(time.getHours());
         this.setMinutes(time.getMinutes());
@@ -973,7 +911,7 @@ Date.prototype.updateTime = Date.prototype.updateTime ||
 
 Date.prototype.updateDate = Date.prototype.updateDate ||
     function updateDate(this: Date, date: Date): void {
-        if (!ToolKit.isValidDate(this)) return;
+        if (!isValidDate(this)) return;
 
         this.setFullYear(date.getFullYear());
         this.setMonth(date.getMonth());
@@ -1020,8 +958,7 @@ if (!Object.prototype.forEachProperty) {
     });
 }
 
-
-class AssertionError extends Error {
+export class AssertionError extends Error {
     constructor(msg?: string) {
         super(msg || 'Assertion failed');
     }
