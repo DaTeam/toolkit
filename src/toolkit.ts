@@ -187,9 +187,6 @@ export const assert: (condition: unknown, msg?: string) => asserts condition = (
 export const assertIsDefined: <T>(value: T, msg?: string) => asserts value is NonNullable<T> = (value, msg) => {
     if (!isDefined(value)) throw new AssertionError(msg);
 };
-export const assertIsObject: (value: any, msg?: string) => asserts value is object = (value, msg) => {
-    if (!isObject(value)) throw new AssertionError(msg);
-};
 export const assertIsString: (value: any, msg?: string) => asserts value is string = (value, msg) => {
     if (!isString(value)) throw new AssertionError(msg);
 };
