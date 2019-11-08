@@ -1,0 +1,33 @@
+{
+    "name": "toolkit",
+    "version": "1.0.0",
+    "description": "The ToolKit !",
+    "main": "src/toolkit.ts",
+    "scripts": {
+        "compile": "tsc --noEmit && npm run lint",
+        "lint": "eslint 'src/toolkit.ts' --ext .ts --format codeframe --quiet",
+        "build": "tsc"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/DaTeam/toolkit.git"
+    },
+    "keywords": [
+        "toolkit"
+    ],
+    "author": "DaTeam S.A.S. (France)",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/DaTeam/toolkit/issues"
+    },
+    "homepage": "https://github.com/DaTeam/toolkit#readme",
+    "devDependencies": {
+        "@typescript-eslint/parser": "^2.6.1",
+        "eslint": "^6.6.0",
+        "eslint-config-airbnb": "^18.0.1",
+        "eslint-plugin-import": "^2.18.2",
+        "eslint-plugin-json": "^2.0.1",
+        "eslint-plugin-jsx-a11y": "^6.2.3",
+        "typescript": "^3.7.2"
+    }
+}
