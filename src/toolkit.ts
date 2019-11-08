@@ -181,49 +181,46 @@ export const ternaryOfType = <InputType, DefaultValue extends any>(
  ** Asserts
  */
 
-export const assert = (condition: unknown, msg?: string): asserts condition => {
+export const assert: (condition: unknown, msg?: string) => asserts condition = (condition, msg) => {
     if (!condition) throw new AssertionError(msg);
 };
-
-function assertIsDefinedFn<T>(value: T, msg?: string): asserts value is NonNullable<T> {
+export const assertIsDefined: <T>(value: T, msg?: string) => asserts value is NonNullable<T> = (value, msg) => {
     if (!isDefined(value)) throw new AssertionError(msg);
-}
-
-export const assertIsDefined = assertIsDefinedFn;
-export const assertIsObject = (value: any, msg?: string): asserts value is object => {
+};
+export const assertIsObject: (value: any, msg?: string) => asserts value is object = (value, msg) => {
     if (!isObject(value)) throw new AssertionError(msg);
 };
-export const assertIsString = (value: any, msg?: string): asserts value is string => {
+export const assertIsString: (value: any, msg?: string) => asserts value is string = (value, msg) => {
     if (!isString(value)) throw new AssertionError(msg);
 };
-export const assertIsFunction = (value: any, msg?: string): asserts value is Function => {
+export const assertIsFunction: (value: any, msg?: string) => asserts value is Function = (value, msg) => {
     if (!isFunction(value)) throw new AssertionError(msg);
 };
-export const assertIsArray = (value: any, msg?: string): asserts value is Array<any> => {
+export const assertIsArray: (value: any, msg?: string) => asserts value is Array<any> = (value, msg) => {
     if (!isArray(value)) throw new AssertionError(msg);
 };
-export const assertIsBoolean = (value: any, msg?: string): asserts value is boolean => {
+export const assertIsBoolean : (value: any, msg?: string) => asserts value is boolean = (value, msg) => {
     if (!isBoolean(value)) throw new AssertionError(msg);
 };
-export const assertIsNumber = (value: any, msg?: string): asserts value is number => {
+export const assertIsNumber : (value: any, msg?: string) => asserts value is number = (value, msg) => {
     if (!isNumber(value)) throw new AssertionError(msg);
 };
-export const assertIsValidNumber = (value: any, msg?: string): asserts value is number => {
+export const assertIsValidNumber : (value: any, msg?: string) => asserts value is number = (value, msg) => {
     if (!isNumber(value) || isNaN(value)) throw new AssertionError(msg);
 };
-export const assertIsFloat = (value: any, msg?: string): asserts value is number => {
+export const assertIsFloat : (value: any, msg?: string) => asserts value is number = (value, msg) => {
     if (!isFloat(value)) throw new AssertionError(msg);
 };
-export const assertIsDate = (value: any, msg?: string): asserts value is Date => {
+export const assertIsDate : (value: any, msg?: string) => asserts value is Date = (value, msg) => {
     if (!isDate(value)) throw new AssertionError(msg);
 };
-export const assertIsValidDate = (value: any, msg?: string): asserts value is Date => {
+export const assertIsValidDate : (value: any, msg?: string) => asserts value is Date = (value, msg) => {
     if (!isValidDate(value)) throw new AssertionError(msg);
 };
-export const assertIsUndefined = (value: any, msg?: string): asserts value is undefined => {
+export const assertIsUndefined : (value: any, msg?: string) => asserts value is undefined = (value, msg) => {
     if (!isUndefined(value)) throw new AssertionError(msg);
 };
-export const assertIsNull = (value: any, msg?: string): asserts value is null => {
+export const assertIsNull : (value: any, msg?: string) => asserts value is null = (value, msg) => {
     if (!isNull(value)) throw new AssertionError(msg);
 };
 
