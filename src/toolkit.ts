@@ -227,6 +227,11 @@ export default class ToolKit {
         return arg;
     }
 
+
+    static assert(condition: unknown, msg?: string): asserts condition {
+        if (!condition) throw new AssertionError(msg);
+    }
+
     static noop(): void { }
 
     /**
@@ -1013,4 +1018,11 @@ if (!Object.prototype.forEachProperty) {
         configurable: true,
         writable: true
     });
+}
+
+
+class AssertionError extends Error {
+    constructor(msg?: string) {
+        super(msg || 'Assertion failed');
+    }
 }
