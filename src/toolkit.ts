@@ -790,7 +790,7 @@ export const quickClone = <T>(arg: T): T | null => {
 
 // type Timeout
 
-export const setTimeout = <T>(handler: () => T, timeout?: number): Promise<T> =>
+export const setTimeoutAsync = <T>(handler: () => T, timeout?: number): Promise<T> =>
     new Promise((resolve, reject) => {
         try {
             setTimeout(() => resolve(handler()), timeout!);
@@ -865,6 +865,30 @@ export class TimeoutPromise<T> {
         clearTimeout(this.timeoutId);
         this.reject(new Error('Cancelled'));
         this._isTerminated = true;
+    }
+}
+
+export class Debounce<T> {
+    protected handler: (value: T) => void;
+    protected timeout: number;
+    protected timeoutId!: any;
+
+    constructor(handler: (value: T) => void, timeout: number) {
+        this.handler = handler;
+        this.timeout = timeout;
+    }
+
+    push(value: T): void {
+        clearTimeout(this.timeoutId);
+
+        try {
+            this.timeoutId = setTimeout(() => {
+                this.handler(value);
+            }, this.timeout);
+        }
+        catch (err) {
+            // Ignore
+        }
     }
 }
 
