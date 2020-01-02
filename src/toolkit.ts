@@ -196,28 +196,28 @@ export const assertIsFunction: (value: any, msg?: string) => asserts value is Fu
 export const assertIsArray: (value: any, msg?: string) => asserts value is Array<any> = (value, msg) => {
     if (!isArray(value)) throw new AssertionError(msg);
 };
-export const assertIsBoolean : (value: any, msg?: string) => asserts value is boolean = (value, msg) => {
+export const assertIsBoolean: (value: any, msg?: string) => asserts value is boolean = (value, msg) => {
     if (!isBoolean(value)) throw new AssertionError(msg);
 };
-export const assertIsNumber : (value: any, msg?: string) => asserts value is number = (value, msg) => {
+export const assertIsNumber: (value: any, msg?: string) => asserts value is number = (value, msg) => {
     if (!isNumber(value)) throw new AssertionError(msg);
 };
-export const assertIsValidNumber : (value: any, msg?: string) => asserts value is number = (value, msg) => {
+export const assertIsValidNumber: (value: any, msg?: string) => asserts value is number = (value, msg) => {
     if (!isNumber(value) || isNaN(value)) throw new AssertionError(msg);
 };
-export const assertIsFloat : (value: any, msg?: string) => asserts value is number = (value, msg) => {
+export const assertIsFloat: (value: any, msg?: string) => asserts value is number = (value, msg) => {
     if (!isFloat(value)) throw new AssertionError(msg);
 };
-export const assertIsDate : (value: any, msg?: string) => asserts value is Date = (value, msg) => {
+export const assertIsDate: (value: any, msg?: string) => asserts value is Date = (value, msg) => {
     if (!isDate(value)) throw new AssertionError(msg);
 };
-export const assertIsValidDate : (value: any, msg?: string) => asserts value is Date = (value, msg) => {
+export const assertIsValidDate: (value: any, msg?: string) => asserts value is Date = (value, msg) => {
     if (!isValidDate(value)) throw new AssertionError(msg);
 };
-export const assertIsUndefined : (value: any, msg?: string) => asserts value is undefined = (value, msg) => {
+export const assertIsUndefined: (value: any, msg?: string) => asserts value is undefined = (value, msg) => {
     if (!isUndefined(value)) throw new AssertionError(msg);
 };
-export const assertIsNull : (value: any, msg?: string) => asserts value is null = (value, msg) => {
+export const assertIsNull: (value: any, msg?: string) => asserts value is null = (value, msg) => {
     if (!isNull(value)) throw new AssertionError(msg);
 };
 
@@ -566,6 +566,18 @@ export const parseHour = (input: string): Date | null => {
 export const safeParseIsoDate = <T>(value: T): Date | T => {
     if (isString(value)) {
         const date = new Date(value);
+        const matches = value.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+        if (isValidDate(date) && isArray(matches)) {
+            return date!;
+        }
+    }
+
+    return value;
+};
+
+export const safeParseDate = <T>(value: T): Date | T => {
+    if (isString(value)) {
+        const date = parseDate(value);
         if (isValidDate(date)) return date!;
     }
 
@@ -768,11 +780,28 @@ export const safeJsonReviver = (_key: any, value: any) => {
     return value;
 };
 
-export const toJSON = (value: any): string => JSON.stringify(value, safeJsonReplacer);
+export const toJSON = (value: any, replacer?: (key: string, value: any) => any): string => {
+    const internalReplacer = (key: string, val: any) => {
+        if (isFunction(replacer)) {
+            val = replacer(key, val);
+        }
+        return safeJsonReplacer(key, val);
+    };
 
-export const fromJSON = <T = any>(value: string): T | null => {
+    return JSON.stringify(value, internalReplacer);
+};
+
+
+export const fromJSON = <T = any>(value: string, reviver?: (key: string, value: any) => any): T | null => {
+    const internalReviver = (key: string, val: any) => {
+        if (isFunction(reviver)) {
+            val = reviver(key, val);
+        }
+        return safeJsonReviver(key, val);
+    };
+
     try {
-        return JSON.parse(value, safeJsonReviver);
+        return JSON.parse(value, internalReviver);
     }
     catch (error) {
         return null;
