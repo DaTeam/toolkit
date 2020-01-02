@@ -586,6 +586,18 @@ export default class ToolKit {
     static safeParseIsoDate<T>(value: T): Date | T {
         if (ToolKit.isString(value)) {
             const date = new Date(value);
+            const matches = value.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+            if (ToolKit.isValidDate(date) && ToolKit.isArray(matches)) {
+                return date!;
+            }
+        }
+
+        return value;
+    }
+
+    static safeParseDate<T>(value: T): Date | T {
+        if (ToolKit.isString(value)) {
+            const date = ToolKit.parseDate(value);
             if (ToolKit.isValidDate(date)) return date!;
         }
 
