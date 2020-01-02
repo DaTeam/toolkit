@@ -792,13 +792,27 @@ export default class ToolKit {
         return value;
     }
 
-    static toJSON(value: any): string {
-        return JSON.stringify(value, ToolKit.safeJsonReplacer);
+    static toJSON(value: any, replacer?: (key: string, value: any) => any): string {
+        const internalReplacer = (key: string, val: any) => {
+            if (ToolKit.isFunction(replacer)) {
+                val = replacer(key, val);
+            }
+            return ToolKit.safeJsonReplacer(key, val);
+        };
+
+        return JSON.stringify(value, internalReplacer);
     }
 
-    static fromJSON<T = any>(value: string): T | null {
+    static fromJSON<T = any>(value: string, reviver?: (key: string, value: any) => any): T | null {
+        const internalReviver = (key: string, val: any) => {
+            if (ToolKit.isFunction(reviver)) {
+                val = reviver(key, val);
+            }
+            return ToolKit.safeJsonReviver(key, val);
+        };
+
         try {
-            return JSON.parse(value, ToolKit.safeJsonReviver);
+            return JSON.parse(value, internalReviver);
         }
         catch (error) {
             return null;
