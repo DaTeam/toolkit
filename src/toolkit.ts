@@ -1,7 +1,7 @@
 /* eslint-disable func-style */
+/* eslint-disable no-extend-native */
 
 export enum Type {
-    Undefined = 0,
     Null = 1 << 0,
     Number = 1 << 1,
     String = 1 << 2,
@@ -11,7 +11,8 @@ export enum Type {
     Array = 1 << 6,
     Function = 1 << 7,
     NonEmpty = 1 << 8,
-    Valid = 1 << 9
+    Valid = 1 << 9,
+    Undefined = 1 << 10
 }
 
 const fnObjectToString = Object.prototype.toString;
@@ -23,6 +24,14 @@ const arrayTag = '[object Array]';
 const boolTag = '[object Boolean]';
 
 let undef: undefined;
+
+export class RegExp {
+    public static readonly EscapedIsoDate = /^\$\{DATE_(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)\}$/;
+    public static readonly IsoDate = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+    public static readonly DateFormat = /^(\d{2})[-\/](\d{2})[-\/](\d{4})( (\d{2}):(\d{2})[:]?(\d{2})?)?$/; // eslint-disable-line no-useless-escape
+
+    // public static readonly DateFormat = /(\d{2})[-\/]{1}(\d{2})[-\/]{1}(\d{4})( (\d{2}):(\d{2})[:]?(\d{2})?)?/;
+}
 
 const innerMapToDeepObject = (target: any, src: any, options: MapOptions): void => {
     if (!isObject(target) || !isObject(src)) return;
@@ -74,7 +83,7 @@ export const isObject = (arg: any): arg is Object => fnObjectToString.call(arg) 
 export const isString = (arg: any): arg is string =>
     (typeof arg === 'string' || (!isArray(arg) && isObjectLike(arg) && fnObjectToString.call(arg) == stringTag)); // eslint-disable-line eqeqeq
 
-export const isFunction = (arg: any): arg is Function => fnObjectToString.call(arg) === '[object Function]';
+export const isFunction = (arg: any): arg is Function => ['[object Function]', '[object AsyncFunction]'].indexOf(fnObjectToString.call(arg)) >= 0;
 
 export const isArray = (arg: any): arg is any[] => {
     if (Array.isArray) return Array.isArray(arg);
@@ -243,7 +252,12 @@ export const diffCollection = (
     if (!isArray(array) || !isArray(values) || !array.length) return result;
 
     const internalOptions = options || {};
-    const { objectKey, predicate, format, alternativeFormat } = internalOptions;
+    const {
+        objectKey,
+        predicate,
+        format,
+        alternativeFormat
+    } = internalOptions;
 
     let comparator: (item: any, array: any[]) => boolean;
 
@@ -269,6 +283,19 @@ export const diffCollection = (
             result.push(obj);
         }
     });
+
+    return result;
+};
+
+export const compareCollection = (
+    array: any[],
+    values: any[],
+    options?: DiffOptions
+): any[] => {
+    const result: any[] = [];
+
+    result.push(...diffCollection(array, values, options));
+    result.push(...diffCollection(values, array, options));
 
     return result;
 };
@@ -392,6 +419,25 @@ export const removeAt = <T>(array: T[], index: number): boolean => {
     return true;
 };
 
+export const replaceAt = <T>(array: T[], index: number, item: T): void => {
+    if (!isArray(array)) return;
+
+    array.splice(index, 1, item);
+};
+
+export const replaceCollectionItem = <T>(array: T[], item: T, predicate: (item: T, index: number) => boolean): void => {
+    if (!isArray(array)) return;
+    if (!isFunction(predicate)) return;
+
+    const indexToReplace = array.reduce((acc, value, index) => {
+        if (predicate(value, index)) acc.push(index);
+
+        return acc;
+    }, [] as number[]);
+
+    indexToReplace.forEach(index => array.splice(index, 1, item));
+};
+
 /**
  ** String
  */
@@ -495,8 +541,7 @@ export const dateToFormat: (value: Date, format?: string) => string =
     };
 
 export const parseDate = (input: string): Date | null => {
-    const iso = /(\d{2})[-\/]{1}(\d{2})[-\/]{1}(\d{4})( (\d{2}):(\d{2})[:]?(\d{2})?)?/; // eslint-disable-line no-useless-escape
-    const parts = input.match(iso);
+    const parts = input.match(RegExp.DateFormat);
 
     if (isArray(parts)) {
         for (let idx = parts.length - 1; idx >= 0; idx--) {
@@ -566,7 +611,7 @@ export const parseHour = (input: string): Date | null => {
 export const safeParseIsoDate = <T>(value: T): Date | T => {
     if (isString(value)) {
         const date = new Date(value);
-        const matches = value.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+        const matches = value.match(RegExp.IsoDate);
         if (isValidDate(date) && isArray(matches)) {
             return date!;
         }
@@ -758,7 +803,7 @@ export const safeJsonReplacer = (_key: any, value: any) => {
     if (value === Infinity) return 'Infinity';
     if (value === -Infinity) return '-Infinity';
     if (isString(value)) {
-        const matches = value.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+        const matches = value.match(RegExp.IsoDate);
         if (isArray(matches) && isDate(safeParseIsoDate(value))) {
             return `$\{DATE_${value}\}`; // eslint-disable-line no-useless-escape
         }
@@ -773,7 +818,7 @@ export const safeJsonReviver = (_key: any, value: any) => {
     if (value === '-Infinity') return -Infinity;
 
     if (isString(value)) {
-        const match = value.match(/\$\{DATE_(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)\}/);
+        const match = value.match(RegExp.EscapedIsoDate);
         if (isArray(match) && match.length >= 2) return safeParseIsoDate(match[1]);
     }
 
@@ -921,6 +966,42 @@ export class Debounce<T> {
     }
 }
 
+export class DebounceInterval<T> {
+    protected handler: (value: T) => void;
+    protected timeout: number;
+    protected timeoutId!: any;
+    protected pushAwaiting: boolean = false;
+    protected lastValue!: T;
+
+    constructor(handler: (value: T) => void, timeout: number) {
+        this.handler = handler;
+        this.timeout = timeout;
+    }
+
+    push(value: T): void {
+        this.lastValue = value;
+
+        if (this.pushAwaiting === false) {
+            try {
+                this.timeoutId = setTimeout(() => {
+                    if (this.pushAwaiting === true) {
+                        this.pushAwaiting = false;
+                        this.handler(this.lastValue);
+                    }
+                }, this.timeout);
+                this.pushAwaiting = true;
+            }
+            catch (err) {
+                // Ignore
+            }
+        }
+    }
+
+    clear() {
+        clearTimeout(this.timeoutId);
+    }
+}
+
 /*
  ** Date Extension
  */
@@ -934,6 +1015,7 @@ type Week = {
 
 declare global {
     interface Date {
+        toUTC(): Date;
         getWeek(): number;
         getWeeks(boundToMonth?: boolean): Week[];
         getStartOfMonth(): Date;
@@ -942,6 +1024,28 @@ declare global {
         updateDate(date: Date): void;
     }
 }
+
+Date.prototype.toUTC = Date.prototype.toUTC ||
+    function toUTC(this: Date): Date {
+        const offset = this.getTimezoneOffset();
+        const year = this.getFullYear();
+        const month = this.getMonth();
+        const day = this.getDate();
+        const hour = this.getHours() + (offset / 60);
+        const minute = this.getMinutes();
+        const second = this.getSeconds();
+        const millisecond = this.getMilliseconds();
+
+        return new Date(Date.UTC(
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+            millisecond
+        ));
+    };
 
 Date.prototype.getWeek = Date.prototype.getWeek ||
     function getWeek(this: Date): number {
@@ -1014,12 +1118,18 @@ Date.prototype.updateDate = Date.prototype.updateDate ||
 declare global {
     interface String {
         capitalize(): string;
+        toUpperSnakeCase(): string;
     }
 }
 
 String.prototype.capitalize = String.prototype.capitalize ||
     function capitalize(this: string): string {
         return this.charAt(0).toUpperCase() + this.slice(1);
+    };
+
+String.prototype.toUpperSnakeCase = String.prototype.toUpperSnakeCase ||
+    function toUpperSnakeCase(this: string): string {
+        return this.replace(/[\w]([A-Z])/g, m => `${m[0]}_${m[1]}`).toUpperCase();
     };
 
 /*
@@ -1047,8 +1157,114 @@ if (!Object.prototype.forEachProperty) {
     });
 }
 
+/*
+ ** Map Extension
+ */
+
+declare global {
+    interface Map<K, V> {
+        map<T>(callbackfn: (value: V, key: K) => T): T[];
+        reduce<T>(callbackfn: (previousValue: T, currentValue: V, currentKey: K) => T, initialValue: T): T;
+    }
+}
+
+Map.prototype.map = Map.prototype.map ||
+    function map<T, K, V>(this: Map<K, V>, callbackfn: (value: V, key: K) => T): T[] {
+        const array: T[] = [];
+        this.forEach((value, key) => {
+            array.push(callbackfn(value, key));
+        });
+
+        return array;
+    };
+
+
+Map.prototype.reduce = Map.prototype.reduce ||
+    function reduce<T, K, V>(
+        this: Map<K, V>,
+        callbackfn: (previousValue: T, currentValue: V, currentKey: K) => T, initialValue: T
+    ): T {
+        let buffer = initialValue;
+        this.forEach((value, key) => {
+            buffer = callbackfn(buffer, value, key);
+        });
+
+        return buffer;
+    };
+
+/*
+ ** Custom Errors
+ */
+
 export class AssertionError extends Error {
     constructor(msg?: string) {
         super(msg || 'Assertion failed');
+    }
+}
+
+export class ServiceError extends Error {
+    readonly code: string;
+    readonly data?: any;
+
+    constructor(code: string, msg?: string, data?: any) {
+        super(msg);
+
+        this.code = code;
+        this.data = data;
+    }
+}
+
+type HttpErrorExtraData = {
+    msg?: string;
+    data?: any;
+    code?: string;
+};
+
+export enum HttpStatusCode {
+    Ok = 200,
+    BadRequest = 400,
+    Unauthorized = 401,
+    NotFound = 404,
+    Conflict = 409,
+    InternalError = 500,
+    Forbidden = 403
+}
+
+export class HttpError extends Error {
+    readonly statusCode: number;
+    readonly data?: any;
+
+    code?: string;
+
+    constructor(statusCode: number, extraData?: HttpErrorExtraData) {
+        super(extraData?.msg);
+
+        this.statusCode = statusCode;
+        this.code = extraData?.code;
+        this.data = extraData?.data;
+    }
+}
+
+export class BadRequestError extends HttpError {
+    constructor(msg?: string, data?: any) {
+        super(HttpStatusCode.BadRequest, { msg, data });
+    }
+}
+
+export class UnauthorizedError extends HttpError {
+    constructor(msg?: string, data?: any) {
+        super(HttpStatusCode.Unauthorized, { msg, data });
+    }
+}
+
+export class NotFoundError extends HttpError {
+    constructor(msg?: string, data?: any) {
+        super(HttpStatusCode.NotFound, { msg, data });
+    }
+}
+
+export class InternalServerError extends HttpError {
+    constructor(msg?: string, data?: any) {
+        super(HttpStatusCode.InternalError, { msg, data });
     }
 }
