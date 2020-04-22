@@ -476,45 +476,26 @@ export const dateOnly = (date: Date): Date => {
 
 export const formatDate: (date: Date, customFn?: (year: string, month: string, day: string) => string) => string =
     (date, customFn = (year, month, day) => `${day}/${month}/${year}`) => {
-        if (!isValidDate(date)) throw new TypeError('date is not valid');
+        if (!isDate(date) || !isValidDate(date)) throw new TypeError('date is not valid');
         if (!isFunction(customFn)) throw new TypeError('customFn is not valid');
 
         const day = fixedLenInteger(date.getDate(), 2);
         const month = fixedLenInteger(date.getMonth() + 1, 2);
         const year = fixedLenInteger(date.getFullYear(), 4);
+
         return customFn(year, month, day);
     };
 
-export const formatHour: (value: Date | number, customFn?: (h: string, m: string, s: string) => string) => string =
-    (value, customFn = (hour, minute, second) => `${hour}:${minute}:${second}`) => {
-        if (!isDefined(value)) throw new TypeError('value is not valid');
+export const formatHour: (date: Date, customFn?: (h: string, m: string, s: string) => string) => string =
+    (date, customFn = (hour, minute, second) => `${hour}:${minute}:${second}`) => {
+        if (!isDate(date) || !isValidDate(date)) throw new TypeError('date is not valid');
         if (!isFunction(customFn)) throw new TypeError('customFn is not valid');
 
-        let hour;
-        let minute;
-        let second;
+        const hourStr = fixedLenInteger(date.getHours(), 2);
+        const minuteStr = fixedLenInteger(date.getMinutes(), 2);
+        const secondStr = fixedLenInteger(date.getSeconds(), 2);
 
-        if (isDate(value) && isValidDate(value)) {
-            hour = value.getHours();
-            minute = value.getMinutes();
-            second = value.getSeconds();
-        }
-
-        if (isNumber(value) && !isNaN(value)) {
-            hour = Math.floor(value / 3600);
-            minute = Math.floor((value - hour * 3600) / 60);
-            second = value - hour * 3600 - minute * 60;
-        }
-
-        if (isNumber(hour) && isNumber(minute) && isNumber(second)) {
-            hour = fixedLenInteger(hour, 2);
-            minute = fixedLenInteger(minute, 2);
-            second = fixedLenInteger(second, 2);
-
-            return customFn(hour, minute, second);
-        }
-
-        throw new TypeError('type not supported');
+        return customFn(hourStr, minuteStr, secondStr);
     };
 
 export const dateToFormat: (value: Date, format?: string) => string =
@@ -1284,70 +1265,3 @@ export class InternalServerError extends HttpError {
         super(HttpStatusCode.InternalError, { msg, data });
     }
 }
-
-/*
- ** Timezones
- */
-
-type Timezone = {
-    utc: number;
-    dst: number;
-    code: string;
-};
-
-const TIMEZONES: Record<string, Timezone> = {
-    'Europe/Paris': {
-        utc: 60,
-        dst: 120,
-        code: 'FR'
-    },
-    'Europe/London': {
-        utc: 0,
-        dst: 60,
-        code: 'GB'
-    }
-};
-
-declare global {
-    interface Date {
-        toTimezone(timezone: string): Date;
-    }
-}
-
-function getStdTimezoneOffset(date: Date): number {
-    const jan = new Date(date.getFullYear(), 0, 1);
-    const jul = new Date(date.getFullYear(), 6, 1);
-
-    return Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
-}
-
-function isDstObserved(date: Date): boolean {
-    const currentTimezoneOffset = date.getTimezoneOffset();
-    const stdTimezoneOffset = getStdTimezoneOffset(date);
-
-    return currentTimezoneOffset < stdTimezoneOffset;
-}
-
-Date.prototype.toTimezone = Date.prototype.toTimezone ||
-    function toTimezone(this: Date, timezone: string): Date {
-        if (!Object.keys(TIMEZONES).some(key => key === timezone)) {
-            throw new Error(`Timezone ${timezone} not found`);
-        }
-
-        const timezoneInfo = TIMEZONES[timezone];
-        const isDst = isDstObserved(this);
-        const utcOffset = this.getTimezoneOffset();
-        const offset = isDst ? timezoneInfo.dst : timezoneInfo.utc;
-
-        if (Math.abs(utcOffset) === Math.abs(offset)) {
-            return new Date(this.getTime());
-        }
-
-        // convert date to UTC
-        const utc = this.getTime() + (utcOffset * 60000);
-
-        // convert UTC to timezone
-        const newDate = new Date(utc + (offset * 60000));
-
-        return newDate;
-    };
