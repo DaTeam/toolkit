@@ -79,7 +79,7 @@ type DiffOptions = {
  */
 
 export const isDefined = <T>(arg: T): arg is NonNullable<T> => arg !== undef && arg !== null;
-export const isObject = (arg: any): arg is Object => fnObjectToString.call(arg) === '[object Object]';
+export const isObject = (arg: any): arg is Object => arg && typeof arg === 'object' && arg.constructor === Object;
 export const isString = (arg: any): arg is string =>
     (typeof arg === 'string' || (!isArray(arg) && isObjectLike(arg) && fnObjectToString.call(arg) == stringTag)); // eslint-disable-line eqeqeq
 
@@ -667,10 +667,11 @@ export const getClassMethodName = (instance: any, method: Function): string | nu
     return result;
 };
 
-// Previously className
-export const className = (...args: any[]): string | undefined => {
+export const conditionalConcat = (...args: (string | Record<string, boolean>)[]): string | undefined => {
     if (!isArray(args)) return undef;
+
     const finalClassName: string[] = [];
+
     args.forEach(item => {
         if (!isDefined(item)) return;
 
@@ -685,6 +686,7 @@ export const className = (...args: any[]): string | undefined => {
             });
         }
     });
+
     return finalClassName.length > 0 ? finalClassName.join(' ') : undef;
 };
 
@@ -894,6 +896,20 @@ export const pureObjectAssign = (...values: any[]): any | null => {
     if (values.some(val => !isObject(val))) return null;
 
     return Object.assign({}, ...values);
+};
+
+// An alternative version of pureObjectAssign which ignores undefined values
+// It only applys to object's first level properties
+export const pureObjectExtend = (...values: any[]): any | null => {
+    const obj = pureObjectAssign(...values);
+    if (obj === null) return null;
+    if (isObject(obj)) {
+        (obj as Object).forEachProperty((value, key) => {
+            if (value === undef) delete obj[key];
+        });
+    }
+
+    return obj;
 };
 
 export class TimeoutPromise<T> {
@@ -1268,3 +1284,70 @@ export class InternalServerError extends HttpError {
         super(HttpStatusCode.InternalError, { msg, data });
     }
 }
+
+/*
+ ** Timezones
+ */
+
+type Timezone = {
+    utc: number;
+    dst: number;
+    code: string;
+};
+
+const TIMEZONES: Record<string, Timezone> = {
+    'Europe/Paris': {
+        utc: 60,
+        dst: 120,
+        code: 'FR'
+    },
+    'Europe/London': {
+        utc: 0,
+        dst: 60,
+        code: 'GB'
+    }
+};
+
+declare global {
+    interface Date {
+        toTimezone(timezone: string): Date;
+    }
+}
+
+function getStdTimezoneOffset(date: Date): number {
+    const jan = new Date(date.getFullYear(), 0, 1);
+    const jul = new Date(date.getFullYear(), 6, 1);
+
+    return Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
+}
+
+function isDstObserved(date: Date): boolean {
+    const currentTimezoneOffset = date.getTimezoneOffset();
+    const stdTimezoneOffset = getStdTimezoneOffset(date);
+
+    return currentTimezoneOffset < stdTimezoneOffset;
+}
+
+Date.prototype.toTimezone = Date.prototype.toTimezone ||
+    function toTimezone(this: Date, timezone: string): Date {
+        if (!Object.keys(TIMEZONES).some(key => key === timezone)) {
+            throw new Error(`Timezone ${timezone} not found`);
+        }
+
+        const timezoneInfo = TIMEZONES[timezone];
+        const isDst = isDstObserved(this);
+        const utcOffset = this.getTimezoneOffset();
+        const offset = isDst ? timezoneInfo.dst : timezoneInfo.utc;
+
+        if (Math.abs(utcOffset) === Math.abs(offset)) {
+            return new Date(this.getTime());
+        }
+
+        // convert date to UTC
+        const utc = this.getTime() + (utcOffset * 60000);
+
+        // convert UTC to timezone
+        const newDate = new Date(utc + (offset * 60000));
+
+        return newDate;
+    };
