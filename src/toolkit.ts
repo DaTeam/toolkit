@@ -25,10 +25,13 @@ const boolTag = '[object Boolean]';
 
 let undef: undefined;
 
+type NativeRegExp = globalThis.RegExp;
+
 export class RegExp {
     public static readonly EscapedIsoDate = /^\$\{DATE_(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)\}$/;
     public static readonly IsoDate = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
     public static readonly DateFormat = /^(\d{2})[-\/](\d{2})[-\/](\d{4})( (\d{2}):(\d{2})[:]?(\d{2})?)?$/; // eslint-disable-line no-useless-escape
+    public static readonly StringFormat = /{(\d+)}/g;
 
     // public static readonly DateFormat = /(\d{2})[-\/]{1}(\d{2})[-\/]{1}(\d{4})( (\d{2}):(\d{2})[:]?(\d{2})?)?/;
 }
@@ -108,7 +111,7 @@ export const isDate = (arg: any): arg is Date =>
 export const isValidDate = (arg: any): boolean => isDate(arg) && !isNaN(arg.getTime());
 export const isUndefined = (arg: any): arg is undefined => arg === undef;
 export const isNull = (arg: any): arg is null => arg === null;
-export const isObjectLike = (arg: any): boolean => arg != null && typeof arg === 'object'; // eslint-disable-line eqeqeq
+export const isObjectLike = (arg: any): boolean => arg && typeof arg === 'object'; // eslint-disable-line eqeqeq
 export const isNativeTypeObject = (arg: any): boolean =>
     isUndefined(arg) ||
     isNull(arg) ||
@@ -455,6 +458,21 @@ export const toCamelCase = (value: string): string => {
         .replace(/\s(.)/g, $1 => $1.toUpperCase())
         .replace(/\s/g, '')
         .replace(/^(.)/, $1 => $1.toLowerCase());
+};
+
+export const stringFormat = (format: string, ...formatValues: any[]): string => {
+    if (!isString(format)) throw new TypeError('format is not valid');
+
+    return format.replace(
+        RegExp.StringFormat,
+        (match, number) => (isUndefined(formatValues[number]) ? match : formatValues[number])
+    );
+};
+
+export const generateFormat = (value: string, expression: NativeRegExp): string => {
+    let count = 0;
+
+    return value.replace(expression, () => `{${count++}}`);
 };
 
 /**
@@ -874,7 +892,7 @@ export const hasProperty = (obj: any, prop: string | number): boolean => {
 // to Object.assign to ensure we correctly copy data instead of mutating
 export const pureObjectAssign = (...values: any[]): any | null => {
     if (!isArray(values)) return null;
-    if (values.some(val => !isObject(val))) return null;
+    if (values.some(val => !isObjectLike(val))) return null;
 
     return Object.assign({}, ...values);
 };

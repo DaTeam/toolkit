@@ -34,6 +34,7 @@
         "no-fallthrough": "off",
         "no-undef": "off",
         "no-undefined": "off",
+        "no-plusplus": "off",
         "no-await-in-loop": "off",
         "no-unneeded-ternary": "off",
         "no-underscore-dangle": "off",
@@ -122,12 +123,6 @@
             "error",
             {
                 "includeExports": true
-            }
-        ],
-        "no-plusplus": [
-            "error",
-            {
-                "allowForLoopAfterthoughts": true
             }
         ],
         "no-else-return": [
