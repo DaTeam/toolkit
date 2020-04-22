@@ -5,7 +5,7 @@
     "main": "src/toolkit.ts",
     "scripts": {
         "compile": "tsc --noEmit && npm run lint",
-        "lint": "eslint 'src/toolkit.ts' --ext .ts --format codeframe --quiet",
+        "lint": "eslint src/*.ts --ext .ts --format codeframe --quiet",
         "build": "tsc"
     },
     "repository": {
@@ -22,14 +22,14 @@
     },
     "homepage": "https://github.com/DaTeam/toolkit#readme",
     "devDependencies": {
-        "@types/react": "^16.9.23",
-        "@typescript-eslint/parser": "^2.22.0",
+        "@types/react": "^16.9.34",
+        "@typescript-eslint/parser": "^2.29.0",
         "eslint": "^6.8.0",
-        "eslint-config-airbnb": "^18.0.1",
-        "eslint-plugin-import": "^2.20.1",
-        "eslint-plugin-json": "^2.1.0",
+        "eslint-config-airbnb": "^18.1.0",
+        "eslint-plugin-import": "^2.20.2",
+        "eslint-plugin-json": "^2.1.1",
         "eslint-plugin-jsx-a11y": "^6.2.3",
-        "react": "^16.13.0",
+        "react": "^16.13.1",
         "typescript": "^3.8.3"
     }
 }
