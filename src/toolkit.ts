@@ -37,7 +37,7 @@ export class RegExp {
 }
 
 const innerMapToDeepObject = (target: any, src: any, options: MapOptions): void => {
-    if (!isObject(target) || !isObject(src)) return;
+    if (!isObjectLike(target) || !isObjectLike(src)) return;
 
     const srcKeys = Object.keys(src);
     const targetKeys = Object.keys(target);
@@ -741,7 +741,8 @@ export const mapToDeepObject = (target: any, src: any, options: MapOptions = {
     ignoreStrictMappingWhenNull: true,
     allowDynamicObjects: false
 }): void => {
-    if (!isObject(target) || !isObject(src)) return;
+    if (!isObjectLike(target) || !isObjectLike(src)) return;
+
     const defaultOptions = {
         transformIsoToDate: false,
         strictMapping: false,
