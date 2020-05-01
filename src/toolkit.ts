@@ -91,7 +91,7 @@ export const isFunction = (arg: any): arg is Function => ['[object Function]', '
 export const isArray = (arg: any): arg is any[] => {
     if (Array.isArray) return Array.isArray(arg);
 
-    return fnObjectToString.call(arg) === arrayTag;
+    return typeof arg === 'object' && (fnObjectToString.call(arg) === arrayTag || arg.constructor === Array);
 };
 
 export const isBoolean = (arg: any): arg is boolean =>
@@ -103,8 +103,9 @@ export const isNumber = (arg: any): arg is number =>
     typeof arg === 'number' ||
     (isObjectLike(arg) && fnObjectToString.call(arg) === numberTag);
 
+export const isValidNumber = (arg: any): arg is number => isNumber(arg) && Number.isFinite(arg);
 export const isNaN = (arg: any): boolean => isNumber(arg) && arg != +arg; // eslint-disable-line eqeqeq
-export const isFloat = (value: number): boolean => isNumber(value) && value % 1 !== 0;
+export const isFloat = (value: number): boolean => isValidNumber(value) && value % 1 !== 0;
 export const isDate = (arg: any): arg is Date =>
     (isObjectLike(arg) && fnObjectToString.call(arg) === dateTag) || false;
 
@@ -121,7 +122,7 @@ export const isNativeTypeObject = (arg: any): boolean =>
     isString(arg) ||
     isArray(arg) ||
     isFunction(arg);
-
+export const isRegExp = (arg: any): arg is RegExp => typeof arg === 'object' && arg.constructor === RegExp;
 export const isEmpty = <T extends string | any[]>(arg: T): boolean => {
     if (!isString(arg) && !isArray(arg)) throw new TypeError('arg is not of a valid type');
 
@@ -215,7 +216,7 @@ export const assertIsNumber: (value: any, msg?: string) => asserts value is numb
     if (!isNumber(value)) throw new AssertionError(msg);
 };
 export const assertIsValidNumber: (value: any, msg?: string) => asserts value is number = (value, msg) => {
-    if (!isNumber(value) || isNaN(value)) throw new AssertionError(msg);
+    if (!isValidNumber(value)) throw new AssertionError(msg);
 };
 export const assertIsFloat: (value: any, msg?: string) => asserts value is number = (value, msg) => {
     if (!isFloat(value)) throw new AssertionError(msg);
