@@ -5,7 +5,8 @@
     ],
     "plugins": [
         "json",
-        "import"
+        "import",
+        "react-hooks"
     ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
@@ -272,6 +273,8 @@
         "space-infix-ops": "error",
         "newline-per-chained-call": "error",
         "array-bracket-spacing": "error",
-        "radix": "error"
+        "radix": "error",
+        "react-hooks/exhaustive-deps": "warn",
+        "react-hooks/rules-of-hooks": "error"
     }
 }

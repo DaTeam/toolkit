@@ -14,6 +14,7 @@ export enum Type {
     Valid = 1 << 9,
     Undefined = 1 << 10
 }
+export type AnyFunctionReturning<T> = (...args: any[]) => T;
 
 const fnObjectToString = Object.prototype.toString;
 const ArrayProto = Array.prototype;
@@ -82,9 +83,12 @@ type DiffOptions = {
  */
 
 export const isDefined = <T>(arg: T): arg is NonNullable<T> => arg !== undef && arg !== null;
-export const isObject = (arg: any): arg is Object => arg && typeof arg === 'object' && arg.constructor === Object;
-export const isString = (arg: any): arg is string =>
-    (typeof arg === 'string' || (!isArray(arg) && isObjectLike(arg) && fnObjectToString.call(arg) == stringTag)); // eslint-disable-line eqeqeq
+export const isObject = (arg: any): arg is Object => !!arg && typeof arg === 'object' && arg.constructor === Object;
+export const isString = (arg: any): arg is string => (
+    typeof arg === 'string' ||
+    arg instanceof String ||
+    (isObjectLike(arg) && fnObjectToString.call(arg) === stringTag)
+);
 
 export const isFunction = (arg: any): arg is Function => ['[object Function]', '[object AsyncFunction]'].indexOf(fnObjectToString.call(arg)) >= 0;
 
@@ -112,7 +116,7 @@ export const isDate = (arg: any): arg is Date =>
 export const isValidDate = (arg: any): boolean => isDate(arg) && !isNaN(arg.getTime());
 export const isUndefined = (arg: any): arg is undefined => arg === undef;
 export const isNull = (arg: any): arg is null => arg === null;
-export const isObjectLike = (arg: any): boolean => arg && typeof arg === 'object'; // eslint-disable-line eqeqeq
+export const isObjectLike = (arg: any): boolean => !!arg && typeof arg === 'object'; // eslint-disable-line eqeqeq
 export const isNativeTypeObject = (arg: any): boolean =>
     isUndefined(arg) ||
     isNull(arg) ||
@@ -150,7 +154,7 @@ export const checkType = <T = any>(arg: any, type: Type): arg is T => {
         return true;
     }
 
-    if (type & Type.Object && isObject(arg)) {
+    if (type & Type.Object && isObjectLike(arg)) {
         if (type & Type.NonEmpty) return Object.keys(arg).length > 0;
         return true;
     }
@@ -334,7 +338,7 @@ export const orderBy = <T>(
     }
 
     const internalOptions = { nullFirst: false, ascending: true };
-    if (isDefined(options) && isObject(options)) {
+    if (isDefined(options) && isObjectLike(options)) {
         if (options.nullFirst === true) internalOptions.nullFirst = true;
         if (options.ascending === false) internalOptions.ascending = false;
     }
@@ -366,7 +370,7 @@ export const sortByProperty = <T = any, PropertyT = any>(
     }
 
     const internalOptions = { nullFirst: false, ascending: true };
-    if (isDefined(options) && isObject(options)) {
+    if (isDefined(options) && isObjectLike(options)) {
         if (options.nullFirst === true) internalOptions.nullFirst = true;
         if (options.ascending === false) internalOptions.ascending = false;
     }
@@ -634,7 +638,7 @@ export const safeParseDate = <T>(value: T): Date | T => {
  */
 
 export const getClassName = (instance: any): string | null => {
-    if (isObject(instance) && isFunction(instance.constructor)) return instance.constructor.name;
+    if (isObjectLike(instance) && isFunction(instance.constructor)) return instance.constructor.name;
     if (isFunction(instance)) return instance.name;
 
     return null;
@@ -643,7 +647,7 @@ export const getClassName = (instance: any): string | null => {
 export const getClassMethodName = (instance: any, method: Function): string | null => {
     if (
         !isDefined(instance) ||
-        !(isObject(instance) || isFunction(instance)) ||
+        !(isObjectLike(instance) || isFunction(instance)) ||
         !isFunction(method)
     ) return null;
 
@@ -722,7 +726,7 @@ export const getObjectKeysDeep = (object: any, prefix: string = ''): string[] =>
 
 export const mapToShallowObject =
     (target: any, src: any, filterPredicate?: (key: string, value: any) => boolean): void => {
-        if (!isObject(target) || !isObject(src)) return;
+        if (!isObjectLike(target) || !isObjectLike(src)) return;
 
         let predicate = (() => true) as (key: string, value: any) => boolean;
         if (isFunction(filterPredicate)) predicate = filterPredicate as (key: string, value: any) => boolean;
@@ -796,7 +800,7 @@ export const getPropertySafe = (obj: any, propertyAccessor: string): any | undef
         .split('.')
         .reduce((acc, part) => acc && acc[part], obj);
 
-    return retValue || null;
+    return retValue ?? null;
 };
 
 export const cast = <T>(arg: any): T => arg as T;
@@ -877,6 +881,28 @@ export const setTimeoutAsync = <T>(handler: () => T, timeout?: number): Promise<
         }
     });
 
+// [Warning] Interval is triggered after execution complete
+export const setIntervalAsync = (handler: () => any, timeout?: number) => {
+    let enabled = true;
+    let timeoutId: any | null = null;
+
+    const clear = () => {
+        enabled = false;
+        if (timeoutId) clearTimeout(timeoutId);
+    };
+
+    intervalFn();
+
+    async function intervalFn() {
+        await Promise.resolve(handler());
+        if (!enabled) return;
+
+        timeoutId = setTimeout(intervalFn, timeout!);
+    }
+
+    return clear;
+};
+
 export const noop = (): void => { };
 
 /*
@@ -884,7 +910,7 @@ export const noop = (): void => { };
  */
 
 export const hasProperty = (obj: any, prop: string | number): boolean => {
-    if (!isObject(obj)) throw new TypeError('obj is not valid');
+    if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
     if (!isString(prop) && !isNumber(prop)) throw new TypeError('prop is not valid');
 
     return Object.prototype.hasOwnProperty.call(obj, prop);
@@ -904,7 +930,7 @@ export const pureObjectAssign = (...values: any[]): any | null => {
 export const pureObjectExtend = (...values: any[]): any | null => {
     const obj = pureObjectAssign(...values);
     if (obj === null) return null;
-    if (isObject(obj)) {
+    if (isObjectLike(obj)) {
         (obj as Object).forEachProperty((value, key) => {
             if (value === undef) delete obj[key];
         });
@@ -1016,6 +1042,41 @@ export class DebounceInterval<T> {
 
     clear() {
         clearTimeout(this.timeoutId);
+    }
+}
+
+export class Observer {
+    protected subscribers: Function[] = [];
+
+    subscribe(callback: Function) {
+        this.subscribers.push(callback);
+
+        return () => {
+            removeFromCollection(this.subscribers, sub => sub === callback);
+        };
+    }
+
+    notify(data?: any) {
+        this.subscribers.forEach(sub => sub(data));
+    }
+}
+
+export class TimedNotifier extends Observer {
+    private maxTimeout: number;
+
+    constructor(maxTimeout = 5000) {
+        super();
+
+        if (!isValidNumber(maxTimeout)) throw new TypeError('maxTimeout is not valid');
+
+        this.maxTimeout = maxTimeout;
+    }
+
+    async notify(data?: any) {
+        return Promise.race([
+            Promise.all(this.subscribers.map(sub => new Promise((resolve, reject) => sub(data, resolve, reject)))),
+            new Promise(resolve => setTimeout(resolve, this.maxTimeout))
+        ]);
     }
 }
 
@@ -1156,18 +1217,32 @@ String.prototype.toUpperSnakeCase = String.prototype.toUpperSnakeCase ||
 declare global {
     interface Object {
         forEachProperty(callbackfn: (value: any, key: string) => void): void;
+        mapEachProperty(callbackfn: (value: any, key: string) => any): any[];
     }
 }
 
-// 
 function forEachProperty<T extends Object>(this: T, callbackfn: (value: any, key: string) => void): void {
     Object.keys(this).forEach(key => callbackfn(this[key as keyof T], key));
+}
+
+function mapEachProperty<T extends Object>(this: T, callbackfn: (value: any, key: string) => any): any[] {
+    return Object.keys(this).map(key => callbackfn(this[key as keyof T], key));
 }
 
 // Specific format for react-native
 if (!Object.prototype.forEachProperty) {
     Object.defineProperty(Object.prototype, forEachProperty.name, {
         value: forEachProperty,
+        enumerable: false,
+        configurable: true,
+        writable: true
+    });
+}
+
+// Specific format for react-native
+if (!Object.prototype.mapEachProperty) {
+    Object.defineProperty(Object.prototype, mapEachProperty.name, {
+        value: mapEachProperty,
         enumerable: false,
         configurable: true,
         writable: true
@@ -1215,7 +1290,7 @@ Map.prototype.reduce = Map.prototype.reduce ||
 
 export class AssertionError extends Error {
     constructor(msg?: string) {
-        super(msg || 'Assertion failed');
+        super(msg ?? 'Assertion failed');
     }
 }
 

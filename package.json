@@ -5,7 +5,7 @@
     "main": "src/toolkit.ts",
     "scripts": {
         "compile": "tsc --noEmit && npm run lint",
-        "lint": "eslint src/*.ts --ext .ts --format codeframe --quiet",
+        "lint": "eslint src/*.ts --ext .ts --format codeframe",
         "build": "tsc"
     },
     "repository": {
@@ -29,6 +29,7 @@
         "eslint-plugin-import": "^2.20.2",
         "eslint-plugin-json": "^2.1.1",
         "eslint-plugin-jsx-a11y": "^6.2.3",
+        "eslint-plugin-react-hooks": "^4.0.4",
         "react": "^16.13.1",
         "typescript": "^3.8.3"
     }
