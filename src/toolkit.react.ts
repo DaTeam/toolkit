@@ -7,7 +7,8 @@ import {
     useEffect,
     useCallback,
     useRef,
-    useMemo
+    useMemo,
+    cloneElement
 } from 'react';
 import {
     compareCollection,
@@ -20,7 +21,9 @@ import {
     isArray,
     noop,
     isDefined,
-    AnyFunctionReturning
+    AnyFunctionReturning,
+    Debounce,
+    DebounceInterval
 } from './toolkit';
 
 /*
@@ -56,6 +59,30 @@ export const childrenToReactElement = (children: ReactNode | undefined): ReactEl
  ** Hooks
  */
 
+type StateValue<S extends any> = S | (() => S);
+
+export const useSafeState = <S extends any>(
+    initialState: StateValue<S>
+): [S, React.Dispatch<React.SetStateAction<S>>] => {
+    const mounted = useRef(false);
+    const [state, setState] = useState(initialState);
+    const setter = useCallback((value: React.SetStateAction<S>) => {
+        if (!mounted.current) return;
+
+        setState(value);
+    }, [setState, mounted]);
+
+    useEffect(() => {
+        mounted.current = true;
+
+        return () => {
+            mounted.current = false;
+        };
+    }, []);
+
+    return [state, setter];
+};
+
 /*
  ** Async call which can be triggered immediately or called later
  ** > async function
@@ -72,9 +99,9 @@ export const useAsync = (
     dependencies = [],
     immediate: boolean = true
 ) => {
-    const [pending, setPending] = useState(false);
-    const [value, setValue] = useState(null);
-    const [error, setError] = useState(null);
+    const [pending, setPending] = useSafeState(false);
+    const [value, setValue] = useSafeState(null);
+    const [error, setError] = useSafeState(null);
 
     const execute = useCallback(async (...args) => {
         setPending(true);
@@ -104,7 +131,6 @@ export const useAsync = (
 
     return { execute, pending, value, error };
 };
-
 
 /*
  ** Add logging to monitore the reason a component updated by passing the suspects
@@ -150,7 +176,10 @@ export const useWhyDidYouUpdate = (name: string, props: Record<any, any>) => {
  ** => Returns an array that can be destructured : [value, setState] (such as useState API)
  ** [Possible use case] Wanting to have an internal state whilst overriding it with parent props
  */
-export const useInternalValue = (externalValue: any, defaultValue: any = null) => {
+export const useInternalValue = <S extends any>(
+    externalValue: StateValue<S> | null,
+    defaultValue: StateValue<S> | null = null
+): [S | null, React.Dispatch<React.SetStateAction<S | null>>] => {
     const [internalValue, setInternalValue] = useState(defaultValue);
 
     useEffect(() => {
@@ -255,7 +284,7 @@ export const useAnimationClass = (options?: typeof DEFAULT_OPTIONS): any => {
  ** > dependencies to update the memoized value
  ** => Returns an array that can be destructured : [value, setState] (such as useState API)
  */
-export const createGlobalStateHook = (initValue = null) => {
+export const createGlobalStateHook = <S extends any>(initValue: StateValue<S>) => {
     const observer = new Observer();
     let lastKnownState = initValue;
 
@@ -264,7 +293,7 @@ export const createGlobalStateHook = (initValue = null) => {
         observer.notify(newState);
     };
 
-    return (value?: any, deps: React.DependencyList[] = []) => {
+    return (value?: S, deps: React.DependencyList[] = []): [S, React.Dispatch<React.SetStateAction<S>>] => {
         const [state, setState] = useState(lastKnownState);
 
         const memoizedValue = useMemo(() => value, deps); // eslint-disable-line react-hooks/exhaustive-deps
@@ -291,10 +320,12 @@ export const createGlobalStateHook = (initValue = null) => {
  ** => Returns an array that can be destructured : [value, setState] (such as useState API)
  **     - calling the setState function returns a promise that will be resolved once the state has updated
  */
-export const useAsyncState = (initialState = null) => {
+export const useAsyncState = <S extends any>(
+    initialState: StateValue<S>
+): [S, React.Dispatch<React.SetStateAction<S>>] => {
     const [state, setState] = useState(initialState);
     const [resolver, setResolver] = useState<any>(() => noop);
-    const setter = useCallback(value => {
+    const setter = useCallback((value: React.SetStateAction<S>) => {
         setState(value);
 
         return new Promise(resolve => setResolver(() => resolve));
@@ -364,4 +395,76 @@ export const useError = (...errors: any[]) => {
         },
         errors // eslint-disable-line react-hooks/exhaustive-deps
     );
+};
+
+export const useFirstEffect = (effect: React.EffectCallback, dependencies: any[] = []) => {
+    const occurred = useRef(false);
+
+    useEffect(() => {
+        if (occurred.current) return;
+
+        occurred.current = true;
+        return effect();
+    }, dependencies); // eslint-disable-line react-hooks/exhaustive-deps
+};
+
+export const useFirstDefined = (effect: React.EffectCallback, value: any) => {
+    const occurred = useRef(false);
+
+    useEffect(() => {
+        if (occurred.current || !isDefined(value)) return;
+
+        occurred.current = true;
+        return effect();
+    }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+};
+
+export const useManInTheMiddle = (
+    overrideCallback: (originalCallback: Function, ...args: any[]) => unknown,
+    children: React.ReactNode,
+    dependencies: any[],
+    methodsName: string[] = ['onChange']
+) => useMemo(() => childrenToReactElement(children).map(child => {
+    const overridenMethods: Record<string, Function> = {};
+
+    methodsName.forEach(method => {
+        const { [method]: originMethod } = child.props;
+
+        overridenMethods[method] = (...args: any[]) => overrideCallback(originMethod, ...args);
+    });
+
+    return cloneElement(child, { ...overridenMethods });
+}), dependencies); // eslint-disable-line react-hooks/exhaustive-deps
+
+export const useDebounce = (handler: Function, value: number = 0, interval: boolean = false) => {
+    const debounce = useMemo(() => {
+        if (interval === true) {
+            return new DebounceInterval((...args) => handler(...args), value);
+        }
+
+        return new Debounce((...args) => {
+            handler(...args);
+        }, value);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    return useCallback((...args) => {
+        debounce.push(...args);
+    }, [debounce]);
+};
+
+export const useDebounceValue = <T>(input: T, timeout = 0, interval: boolean = false) => {
+    const [debouncedValue, setDebouncedValue] = useState(input);
+    const debounce = useMemo(() => {
+        if (interval === true) {
+            return new DebounceInterval(value => setDebouncedValue(value), timeout);
+        }
+
+        return new Debounce(value => setDebouncedValue(value), timeout);
+    }, [setDebouncedValue, timeout, interval]);
+
+    useEffect(() => {
+        debounce.push(input);
+    }, [input]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    return debouncedValue;
 };

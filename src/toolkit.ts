@@ -113,7 +113,7 @@ export const isFloat = (value: number): boolean => isValidNumber(value) && value
 export const isDate = (arg: any): arg is Date =>
     (isObjectLike(arg) && fnObjectToString.call(arg) === dateTag) || false;
 
-export const isValidDate = (arg: any): boolean => isDate(arg) && !isNaN(arg.getTime());
+export const isValidDate = (arg: any): arg is Date => isDate(arg) && !isNaN(arg.getTime());
 export const isUndefined = (arg: any): arg is undefined => arg === undef;
 export const isNull = (arg: any): arg is null => arg === null;
 export const isObjectLike = (arg: any): boolean => !!arg && typeof arg === 'object'; // eslint-disable-line eqeqeq
@@ -523,6 +523,9 @@ export const formatHour: (date: Date, customFn?: (h: string, m: string, s: strin
 
 export const dateToFormat: (value: Date, format?: string) => string =
     (value, format = 'dd/MM/yyyy') => {
+        if (!isValidDate(value)) throw new TypeError('date is not valid');
+        if (!isString(format)) throw new TypeError('format is not valid');
+
         try {
             let formattedDate = format;
             formattedDate =
@@ -560,7 +563,8 @@ export const parseDate = (input: string): Date | null => {
                 parseInt(parts[1], 10),
                 parseInt(parts[5], 10),
                 parseInt(parts[6], 10),
-                parseInt(parts[7], 10)
+                parseInt(parts[7], 10),
+                0
             );
         }
         if (parts.length === 7) {
@@ -570,6 +574,7 @@ export const parseDate = (input: string): Date | null => {
                 parseInt(parts[1], 10),
                 parseInt(parts[5], 10),
                 parseInt(parts[6], 10),
+                0,
                 0
             );
         }
@@ -577,7 +582,11 @@ export const parseDate = (input: string): Date | null => {
             return new Date(
                 parseInt(parts[3], 10),
                 parseInt(parts[2], 10) - 1,
-                parseInt(parts[1], 10)
+                parseInt(parts[1], 10),
+                0,
+                0,
+                0,
+                0
             );
         }
     }
@@ -985,22 +994,22 @@ export class TimeoutPromise<T> {
     }
 }
 
-export class Debounce<T> {
-    protected handler: (value: T) => void;
+export class Debounce {
+    protected handler: (...args: any[]) => unknown;
     protected timeout: number;
     protected timeoutId!: any;
 
-    constructor(handler: (value: T) => void, timeout: number) {
+    constructor(handler: (...args: any[]) => unknown, timeout: number) {
         this.handler = handler;
         this.timeout = timeout;
     }
 
-    push(value: T): void {
+    push(...args: any[]): void {
         clearTimeout(this.timeoutId);
 
         try {
             this.timeoutId = setTimeout(() => {
-                this.handler(value);
+                this.handler(...args);
             }, this.timeout);
         }
         catch (err) {
@@ -1009,27 +1018,27 @@ export class Debounce<T> {
     }
 }
 
-export class DebounceInterval<T> {
-    protected handler: (value: T) => void;
+export class DebounceInterval {
+    protected handler: (...args: any[]) => unknown;
     protected timeout: number;
     protected timeoutId!: any;
     protected pushAwaiting: boolean = false;
-    protected lastValue!: T;
+    protected lastValue: any[] = [];
 
-    constructor(handler: (value: T) => void, timeout: number) {
+    constructor(handler: (...args: any[]) => unknown, timeout: number) {
         this.handler = handler;
         this.timeout = timeout;
     }
 
-    push(value: T): void {
-        this.lastValue = value;
+    push(...args: any[]): void {
+        this.lastValue = args;
 
         if (this.pushAwaiting === false) {
             try {
                 this.timeoutId = setTimeout(() => {
                     if (this.pushAwaiting === true) {
                         this.pushAwaiting = false;
-                        this.handler(this.lastValue);
+                        this.handler(...this.lastValue);
                     }
                 }, this.timeout);
                 this.pushAwaiting = true;
@@ -1100,6 +1109,14 @@ declare global {
         getEndOfMonth(): Date;
         updateTime(time: Date): void;
         updateDate(date: Date): void;
+        newTime(time: Date): Date;
+        newDate(date: Date): Date;
+        newYear(year: number): Date;
+        newMonth(month: number): Date;
+        newDay(day: number): Date;
+        newHour(hour: number): Date;
+        newMinute(minute: number): Date;
+        newSecond(second: number): Date;
     }
 }
 
@@ -1147,13 +1164,18 @@ Date.prototype.getWeeks = Date.prototype.getWeeks ||
 
         while (start <= numDays) {
             weeks.push({ week: weekNum, start, end, monthOverlap });
+            if (start > end) break;
+
             weekNum += 1;
             start = end + 1;
             end += 7;
             monthOverlap = false;
             if (end > numDays) {
                 if (boundToMonth === true) end = numDays;
-                else monthOverlap = true;
+                else {
+                    end = end - numDays;
+                    monthOverlap = true;
+                }
             }
         }
 
@@ -1187,6 +1209,86 @@ Date.prototype.updateDate = Date.prototype.updateDate ||
         this.setFullYear(date.getFullYear());
         this.setMonth(date.getMonth());
         this.setDate(date.getDate());
+    };
+
+Date.prototype.newTime = Date.prototype.newTime ||
+    function newTime(this: Date, time: Date): Date | null {
+        if (!isValidDate(this)) return null;
+
+        const newDate = new Date(this);
+        newDate.updateTime(time);
+
+        return newDate;
+    };
+
+Date.prototype.newDate = Date.prototype.newDate ||
+    function newDate(this: Date, date: Date): Date | null {
+        if (!isValidDate(this)) return null;
+
+        const newDate = new Date(this);
+        newDate.updateDate(date);
+
+        return newDate;
+    };
+
+Date.prototype.newYear = Date.prototype.newYear ||
+    function newYear(this: Date, year: number): Date | null {
+        if (!isValidDate(this)) return null;
+
+        const newDate = new Date(this);
+        newDate.setFullYear(year);
+
+        return newDate;
+    };
+
+Date.prototype.newMonth = Date.prototype.newMonth ||
+    function newMonth(this: Date, month: number): Date | null {
+        if (!isValidDate(this)) return null;
+
+        const newDate = new Date(this);
+        newDate.setMonth(month);
+
+        return newDate;
+    };
+
+Date.prototype.newDay = Date.prototype.newDay ||
+    function newDay(this: Date, day: number): Date | null {
+        if (!isValidDate(this)) return null;
+
+        const newDate = new Date(this);
+        newDate.setDate(day);
+
+        return newDate;
+    };
+
+Date.prototype.newHour = Date.prototype.newHour ||
+    function newHour(this: Date, hour: number): Date | null {
+        if (!isValidDate(this)) return null;
+
+        const newDate = new Date(this);
+        newDate.setHours(hour);
+
+        return newDate;
+    };
+
+Date.prototype.newMinute = Date.prototype.newMinute ||
+    function newMinute(this: Date, minute: number): Date | null {
+        if (!isValidDate(this)) return null;
+
+        const newDate = new Date(this);
+        newDate.setMinutes(minute);
+
+        return newDate;
+    };
+
+Date.prototype.newSecond = Date.prototype.newSecond ||
+    function newSecond(this: Date, second: number): Date | null {
+        if (!isValidDate(this)) return null;
+
+        const newDate = new Date(this);
+        newDate.setSeconds(second);
+
+        return newDate;
     };
 
 /*
