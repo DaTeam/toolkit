@@ -33,6 +33,10 @@ export class RegExp {
     public static readonly IsoDate = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
     public static readonly DateFormat = /^(\d{2})[-\/](\d{2})[-\/](\d{4})( (\d{2}):(\d{2})[:]?(\d{2})?)?$/; // eslint-disable-line no-useless-escape
     public static readonly StringFormat = /{(\d+)}/g;
+    public static readonly DateInputPattern = /^(\d{1,2})?(\/)?(\d{1,2})?(\/)?(\d{1,4})?$/; // eslint-disable-line no-useless-escape
+    public static readonly DateInputPatternStraightForward = /^(\d{1,2})?((?<=\d{2})\/)?((?<=\/)\d{1,2})?((?<=\d{2})\/)?((?<=\/)\d{1,4})?$/; // eslint-disable-line max-len
+    public static readonly DateAutoSlash = /^(\d{2})((\d)?\d)?(\d{1,4})?$/;
+    public static readonly DateAutoSlashPlaceholder = /^((?:\d|\?){2})((\d|\?)?(?:\d|\?))?((?:\d|\?){1,4})?$/;
 
     // public static readonly DateFormat = /(\d{2})[-\/]{1}(\d{2})[-\/]{1}(\d{4})( (\d{2}):(\d{2})[:]?(\d{2})?)?/;
 }
@@ -478,6 +482,15 @@ export const generateFormat = (value: string, expression: NativeRegExp): string 
     let count = 0;
 
     return value.replace(expression, () => `{${count++}}`);
+};
+
+export const findDiff = (source: string, compareTo: string): number => {
+    let sourceArray = Array.from(source);
+    let compareArray = Array.from(compareTo);
+
+    if (source.length < compareTo.length) [sourceArray, compareArray] = [compareArray, sourceArray];
+
+    return sourceArray.findIndex((chr, idx) => chr !== compareArray[idx]);
 };
 
 /**
@@ -1299,6 +1312,7 @@ declare global {
     interface String {
         capitalize(): string;
         toUpperSnakeCase(): string;
+        insertAt(index: number, value: string): string;
     }
 }
 
@@ -1310,6 +1324,14 @@ String.prototype.capitalize = String.prototype.capitalize ||
 String.prototype.toUpperSnakeCase = String.prototype.toUpperSnakeCase ||
     function toUpperSnakeCase(this: string): string {
         return this.replace(/[\w]([A-Z])/g, m => `${m[0]}_${m[1]}`).toUpperCase();
+    };
+
+String.prototype.insertAt = String.prototype.insertAt ||
+    function insertAt(this: string, index: number, value: string): string {
+        const splitDigits = Array.from(this);
+        splitDigits.splice(index, 0, value);
+
+        return splitDigits.join('');
     };
 
 /*
