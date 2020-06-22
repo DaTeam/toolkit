@@ -436,23 +436,23 @@ export const useManInTheMiddle = (
     return cloneElement(child, { ...overridenMethods });
 }), dependencies); // eslint-disable-line react-hooks/exhaustive-deps
 
-export const useDebounce = (handler: Function, value: number = 0, interval: boolean = false) => {
+export const useDebounce = (handler: Function, timeout: number = 0, interval: boolean = false) => {
     const debounce = useMemo(() => {
         if (interval === true) {
-            return new DebounceInterval((...args) => handler(...args), value);
+            return new DebounceInterval((...args) => handler(...args), timeout);
         }
 
         return new Debounce((...args) => {
             handler(...args);
-        }, value);
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+        }, timeout);
+    }, [handler, timeout, interval]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return useCallback((...args) => {
         debounce.push(...args);
     }, [debounce]);
 };
 
-export const useDebounceValue = <T>(input: T, timeout = 0, interval: boolean = false) => {
+export const useDebounceValue = <T>(input: T, timeout: number = 0, interval: boolean = false) => {
     const [debouncedValue, setDebouncedValue] = useState(input);
     const debounce = useMemo(() => {
         if (interval === true) {

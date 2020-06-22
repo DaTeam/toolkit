@@ -31,14 +31,13 @@ type NativeRegExp = globalThis.RegExp;
 export class RegExp {
     public static readonly EscapedIsoDate = /^\$\{DATE_(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)\}$/;
     public static readonly IsoDate = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-    public static readonly DateFormat = /^(\d{2})[-\/](\d{2})[-\/](\d{4})( (\d{2}):(\d{2})[:]?(\d{2})?)?$/; // eslint-disable-line no-useless-escape
-    public static readonly StringFormat = /{(\d+)}/g;
+    public static readonly DateFormat = /^((?:[0-3])(?:(?<=[0-2])[0-9]|(?<=3)[01]))[-\/]((?:[01])(?:(?<=0)[0-9]|(?<=1)[0-2]))[-\/](\d{4})(?: ([0-2](?:(?<=[0-1])[0-9]|(?<=2)[0-4])):([0-5][0-9])(?:[:]([0-5][0-9]))?)?$/; // eslint-disable-line no-useless-escape, max-len
     public static readonly DateInputPattern = /^(\d{1,2})?(\/)?(\d{1,2})?(\/)?(\d{1,4})?$/; // eslint-disable-line no-useless-escape
-    public static readonly DateInputPatternStraightForward = /^(\d{1,2})?((?<=\d{2})\/)?((?<=\/)\d{1,2})?((?<=\d{2})\/)?((?<=\/)\d{1,4})?$/; // eslint-disable-line max-len
-    public static readonly DateAutoSlash = /^(\d{2})((\d)?\d)?(\d{1,4})?$/;
-    public static readonly DateAutoSlashPlaceholder = /^((?:\d|\?){2})((\d|\?)?(?:\d|\?))?((?:\d|\?){1,4})?$/;
-
-    // public static readonly DateFormat = /(\d{2})[-\/]{1}(\d{2})[-\/]{1}(\d{4})( (\d{2}):(\d{2})[:]?(\d{2})?)?/;
+    public static readonly DateAutoSlash = /^((?:\d{2})(?:(?<=\d{2})\/(?:\d{2}))?)$/;
+    public static readonly TimeFormat = /^(?:([0-2](?:(?<=[0-1])[0-9]|(?<=2)[0-4])):([0-5][0-9])(?:[:]([0-5][0-9]))?)?$/; // eslint-disable-line max-len
+    public static readonly TimeInputPattern = /^(\d{1,2})?(:)?(\d{1,2})?$/; // eslint-disable-line no-useless-escape
+    public static readonly TimeAutoColon = /^(\d{2})$/;
+    public static readonly StringFormat = /{(\d+)}/g;
 }
 
 const innerMapToDeepObject = (target: any, src: any, options: MapOptions): void => {
@@ -560,78 +559,110 @@ export const dateToFormat: (value: Date, format?: string) => string =
         return format;
     };
 
-export const parseDate = (input: string): Date | null => {
-    const parts = input.match(RegExp.DateFormat);
+export const parseDate = (text: string): Date | null => {
+    const matchGroups = text.match(RegExp.DateFormat);
 
-    if (isArray(parts)) {
-        for (let idx = parts.length - 1; idx >= 0; idx--) {
-            if (!isString(parts[idx])) parts.pop();
-            else break;
+    if (!isArray(matchGroups)) return null;
+
+    const parseIntValue = (s: string, optional: boolean = false) => {
+        if (isString(s)) {
+            const value = parseInt(s, 10);
+
+            if (isValidNumber(value)) return value;
+
+            throw new Error('value is not valid');
         }
 
-        if (parts.length === 8) {
-            return new Date(
-                parseInt(parts[3], 10),
-                parseInt(parts[2], 10) - 1,
-                parseInt(parts[1], 10),
-                parseInt(parts[5], 10),
-                parseInt(parts[6], 10),
-                parseInt(parts[7], 10),
-                0
-            );
-        }
-        if (parts.length === 7) {
-            return new Date(
-                parseInt(parts[3], 10),
-                parseInt(parts[2], 10) - 1,
-                parseInt(parts[1], 10),
-                parseInt(parts[5], 10),
-                parseInt(parts[6], 10),
-                0,
-                0
-            );
-        }
-        if (parts.length === 4) {
-            return new Date(
-                parseInt(parts[3], 10),
-                parseInt(parts[2], 10) - 1,
-                parseInt(parts[1], 10),
-                0,
-                0,
-                0,
-                0
-            );
-        }
+        if (!optional) throw new Error('value is not valid');
+
+        return 0;
+    };
+
+    const [
+        ,
+        dayGroup,
+        monthGroup,
+        yearGroup,
+        hourGroup,
+        minuteGroup,
+        secondGroup
+    ] = matchGroups;
+
+    try {
+        const year = parseIntValue(yearGroup);
+        const month = parseIntValue(monthGroup);
+        const day = parseIntValue(dayGroup);
+        const hour = parseIntValue(hourGroup, true);
+        const minute = parseIntValue(minuteGroup, true);
+        const second = parseIntValue(secondGroup, true);
+
+        // Checking the number of days for the month
+        const startOfMonth = new Date(year, month - 1, 1, 0, 0, 0, 0);
+        const numberOfDays = startOfMonth.getEndOfMonth().getDate();
+
+        if (day > numberOfDays) return null;
+
+        return new Date(
+            year,
+            month - 1,
+            day,
+            hour,
+            minute,
+            second,
+            0
+        );
     }
-
-    return null;
+    catch {
+        return null;
+    }
 };
 
-export const parseHour = (input: string): Date | null => {
-    if (!isDefined(input)) return null;
+export const parseTime = (text: string, defaultDate?: Date): Date | null => {
+    if (!isString(text)) throw new Error('text is not valid');
 
-    const iso = /(\d{2}):(\d{2})[:]?(\d{2})?/;
-    const parts = input.match(iso);
+    const matchGroups = text.match(RegExp.TimeFormat);
 
-    if (isArray(parts)) {
-        for (let idx = parts.length - 1; idx >= 0; idx--) {
-            if (!isString(parts[idx])) parts.pop();
-            else break;
+    if (!isArray(matchGroups)) return null;
+
+    const parseIntValue = (s: string, optional: boolean = false) => {
+        if (isString(s)) {
+            const value = parseInt(s, 10);
+
+            if (isValidNumber(value)) return value;
+
+            throw new Error('value not valid');
         }
 
-        if (parts.length > 2) {
-            const date = new Date();
-            date.setHours(parseInt(parts[1], 10));
-            date.setMinutes(parseInt(parts[2], 10));
+        if (!optional) throw new Error('value not valid');
 
-            if (parts.length > 3) date.setSeconds(parseInt(parts[3], 10));
-            else date.setSeconds(0);
+        return 0;
+    };
 
-            return date;
-        }
+    const [
+        ,
+        hourGroup,
+        minuteGroup,
+        secondGroup
+    ] = matchGroups;
+
+    try {
+        const hour = parseIntValue(hourGroup);
+        const minute = parseIntValue(minuteGroup);
+        const second = parseIntValue(secondGroup, true);
+
+        defaultDate = isValidDate(defaultDate) ? defaultDate : new Date();
+
+        defaultDate.setHours(hour);
+        defaultDate.setMinutes(minute);
+
+        if (second) defaultDate.setSeconds(second);
+        else defaultDate.setSeconds(0);
+
+        return defaultDate;
     }
-
-    return null;
+    catch {
+        return null;
+    }
 };
 
 export const safeParseIsoDate = <T>(value: T): Date | T => {
@@ -1121,6 +1152,7 @@ declare global {
         getStartOfMonth(): Date;
         getEndOfMonth(): Date;
         updateTime(time: Date): void;
+        clearTime(): void;
         updateDate(date: Date): void;
         newTime(time: Date): Date;
         newDate(date: Date): Date;
@@ -1214,6 +1246,17 @@ Date.prototype.updateTime = Date.prototype.updateTime ||
         this.setSeconds(time.getSeconds());
         this.setMilliseconds(time.getMilliseconds());
     };
+
+Date.prototype.clearTime = Date.prototype.clearTime ||
+    function clearTime(this: Date): void {
+        if (!isValidDate(this)) return;
+
+        this.setHours(0);
+        this.setMinutes(0);
+        this.setSeconds(0);
+        this.setMilliseconds(0);
+    };
+
 
 Date.prototype.updateDate = Date.prototype.updateDate ||
     function updateDate(this: Date, date: Date): void {
