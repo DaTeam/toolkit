@@ -756,6 +756,13 @@ export const isCollectionOf = <T = any>(array: T[], instanceOf: any): boolean =>
 };
 
 /**
+ ** Events
+ */
+
+export const onEvent = (obj: any, ...args: any[]) => obj.addEventListener(...args);
+export const offEvent = (obj: any, ...args: any[]) => obj.removeEventListener(...args);
+
+/**
  ** Utilities
  */
 
