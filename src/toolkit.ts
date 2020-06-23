@@ -650,15 +650,15 @@ export const parseTime = (text: string, defaultDate?: Date): Date | null => {
         const minute = parseIntValue(minuteGroup);
         const second = parseIntValue(secondGroup, true);
 
-        defaultDate = isValidDate(defaultDate) ? defaultDate : new Date();
+        const date = isValidDate(defaultDate) ? new Date(defaultDate) : new Date();
 
-        defaultDate.setHours(hour);
-        defaultDate.setMinutes(minute);
+        date.setHours(hour);
+        date.setMinutes(minute);
 
-        if (second) defaultDate.setSeconds(second);
-        else defaultDate.setSeconds(0);
+        if (second) date.setSeconds(second);
+        else date.setSeconds(0);
 
-        return defaultDate;
+        return date;
     }
     catch {
         return null;
