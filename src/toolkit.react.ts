@@ -23,7 +23,8 @@ import {
     isDefined,
     AnyFunctionReturning,
     Debounce,
-    DebounceInterval
+    DebounceInterval,
+    objectPick
 } from './toolkit';
 
 /*
@@ -468,3 +469,6 @@ export const useDebounceValue = <T>(input: T, timeout: number = 0, interval: boo
 
     return debouncedValue;
 };
+
+export const usePick = <T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> =>
+    useMemo(() => objectPick(obj, keys), [obj]); // eslint-disable-line react-hooks/exhaustive-deps

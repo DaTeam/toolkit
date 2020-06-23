@@ -969,11 +969,18 @@ export const noop = (): void => { };
  ** Objects
  */
 
-export const hasProperty = (obj: any, prop: string | number): boolean => {
+export const hasProperty = <T, K extends keyof T>(obj: T, prop: K): boolean => {
     if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
     if (!isString(prop) && !isNumber(prop)) throw new TypeError('prop is not valid');
 
     return Object.prototype.hasOwnProperty.call(obj, prop);
+};
+
+export const propertyIsEnumerable = <T, K extends keyof T>(obj: T, prop: K): boolean => {
+    if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
+    if (!isString(prop) && !isValidNumber(prop)) throw new TypeError('prop is not valid');
+
+    return Object.prototype.propertyIsEnumerable.call(obj, prop);
 };
 
 // Encapsulate the idea of passing a new object as the first parameter
@@ -998,6 +1005,40 @@ export const pureObjectExtend = (...values: any[]): any | null => {
 
     return obj;
 };
+
+export const objectPick = <T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> => {
+    if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
+    if (!isArray(keys)) throw new TypeError('keys ares not valid');
+
+    return Object.defineProperties(
+        {},
+        Object.assign(
+            {},
+            ...keys
+                .filter(key => propertyIsEnumerable(obj, key))
+                .map(key => ({ [key]: Object.getOwnPropertyDescriptor(obj, key) }))
+        )
+    );
+};
+
+export const objectOmit = <T, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> => {
+    if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
+    if (!isArray(keys)) throw new TypeError('keys ares not valid');
+
+    return Object.defineProperties(
+        {},
+        Object.assign(
+            {},
+            ...(Object.keys(obj) as K[])
+                .filter(key => !keys.includes(key) && propertyIsEnumerable(obj, key))
+                .map(key => ({ [key]: Object.getOwnPropertyDescriptor(obj, key) }))
+        )
+    );
+};
+
+/*
+ ** Classes
+ */
 
 export class TimeoutPromise<T> {
     private _promise: Promise<T>;
