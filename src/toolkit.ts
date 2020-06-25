@@ -903,7 +903,6 @@ export const toJSON = (value: any, replacer?: (key: string, value: any) => any):
     return JSON.stringify(value, internalReplacer);
 };
 
-
 export const fromJSON = <T = any>(value: string, reviver?: (key: string, value: any) => any): T | null => {
     const internalReviver = (key: string, val: any) => {
         if (isFunction(reviver)) {
@@ -1305,7 +1304,6 @@ Date.prototype.clearTime = Date.prototype.clearTime ||
         this.setMilliseconds(0);
     };
 
-
 Date.prototype.updateDate = Date.prototype.updateDate ||
     function updateDate(this: Date, date: Date): void {
         if (!isValidDate(this)) return;
@@ -1484,7 +1482,6 @@ Map.prototype.map = Map.prototype.map ||
 
         return array;
     };
-
 
 Map.prototype.reduce = Map.prototype.reduce ||
     function reduce<T, K, V>(
