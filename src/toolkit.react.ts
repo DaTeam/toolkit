@@ -323,7 +323,7 @@ export const createGlobalStateHook = <S extends any>(initValue: StateValue<S>) =
  */
 export const useAsyncState = <S extends any>(
     initialState: StateValue<S>
-): [S, React.Dispatch<React.SetStateAction<S>>] => {
+): [S, (value: React.SetStateAction<S>) => Promise<unknown>] => {
     const [state, setState] = useState(initialState);
     const [resolver, setResolver] = useState<any>(() => noop);
     const setter = useCallback((value: React.SetStateAction<S>) => {
