@@ -1209,6 +1209,14 @@ declare global {
         newHour(hour: number): Date;
         newMinute(minute: number): Date;
         newSecond(second: number): Date;
+        matchDate(compareTo: Date): boolean;
+        matchTime(compareTo: Date): boolean;
+        addYear(year: number): Date;
+        addMonth(month: number): Date;
+        addDay(day: number): Date;
+        addHour(hour: number): Date;
+        addMinute(minute: number): Date;
+        addSecond(second: number): Date;
     }
 }
 
@@ -1389,6 +1397,88 @@ Date.prototype.newSecond = Date.prototype.newSecond ||
 
         const newDate = new Date(this);
         newDate.setSeconds(second);
+
+        return newDate;
+    };
+
+Date.prototype.matchDate = Date.prototype.matchDate ||
+    function matchDate(this: Date, compareTo: Date): boolean {
+        if (!isValidDate(this) || !isValidDate(compareTo)) return false;
+
+        const source = new Date(this);
+        const target = new Date(compareTo);
+
+        source.clearTime();
+        target.clearTime();
+
+        return source.getTime() === target.getTime();
+    };
+
+Date.prototype.matchTime = Date.prototype.matchTime ||
+    function matchTime(this: Date, compareTo: Date): boolean {
+        if (!isValidDate(this) || !isValidDate(compareTo)) return false;
+
+        const target = this.newTime(compareTo);
+
+        return this.getTime() === target.getTime();
+    };
+
+Date.prototype.addYear = Date.prototype.addYear ||
+    function addYear(this: Date, year: number): Date | null {
+        if (!isValidDate(this)) return null;
+
+        const newDate = new Date(this);
+        newDate.setFullYear(newDate.getFullYear() + year);
+
+        return newDate;
+    };
+
+Date.prototype.addMonth = Date.prototype.addMonth ||
+    function addMonth(this: Date, month: number): Date | null {
+        if (!isValidDate(this)) return null;
+
+        const newDate = new Date(this);
+        newDate.setMonth(newDate.getMonth() + month);
+
+        return newDate;
+    };
+
+Date.prototype.addDay = Date.prototype.addDay ||
+    function addDay(this: Date, day: number): Date | null {
+        if (!isValidDate(this)) return null;
+
+        const newDate = new Date(this);
+        newDate.setDate(newDate.getDate() + day);
+
+        return newDate;
+    };
+
+Date.prototype.addHour = Date.prototype.addHour ||
+    function addHour(this: Date, hour: number): Date | null {
+        if (!isValidDate(this)) return null;
+
+        const newDate = new Date(this);
+        newDate.setHours(newDate.getHours() + hour);
+
+        return newDate;
+    };
+
+Date.prototype.addMinute = Date.prototype.addMinute ||
+    function addMinute(this: Date, minute: number): Date | null {
+        if (!isValidDate(this)) return null;
+
+        const newDate = new Date(this);
+        newDate.setMinutes(newDate.getMinutes() + minute);
+
+        return newDate;
+    };
+
+Date.prototype.addSecond = Date.prototype.addSecond ||
+    function addSecond(this: Date, second: number): Date | null {
+        if (!isValidDate(this)) return null;
+
+        const newDate = new Date(this);
+        newDate.setSeconds(newDate.getSeconds() + second);
 
         return newDate;
     };
