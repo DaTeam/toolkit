@@ -246,11 +246,16 @@ export const assertIsNull: (value: any, msg?: string) => asserts value is null =
  */
 
 export const addRange = (src: any[], newElements: any[]) => {
+    if (!isArray(src)) throw new TypeError('src param is not valid');
+    if (!isArray(newElements)) throw new TypeError('newElements param is not valid');
+
     ArrayProto.push.apply(src, newElements);
 };
 
 export const clearCollection = (collection: any[]) => {
-    if (isArray(collection)) collection.splice(0, collection.length);
+    if (!isArray(collection)) throw new TypeError('collection is not valid');
+
+    collection.splice(0, collection.length);
 };
 
 export const diffCollection = (
@@ -423,11 +428,11 @@ export const removeFromCollection = <T>(
     return true;
 };
 
-export const removeAt = <T>(array: T[], index: number): boolean => {
-    if (!isArray(array)) return false;
+export const removeAt = <T>(array: T[], index: number): void => {
+    if (!isArray(array)) throw new TypeError('array is not valid');
+    if (!isValidNumber(index)) throw new TypeError('index is not valid');
 
     array.splice(index, 1);
-    return true;
 };
 
 export const replaceAt = <T>(array: T[], index: number, item: T): void => {
@@ -570,10 +575,10 @@ export const parseDate = (text: string): Date | null => {
 
             if (isValidNumber(value)) return value;
 
-            throw new Error('value is not valid');
+            throw new TypeError('value is not valid');
         }
 
-        if (!optional) throw new Error('value is not valid');
+        if (!optional) throw new TypeError('value is not valid');
 
         return 0;
     };
@@ -618,7 +623,7 @@ export const parseDate = (text: string): Date | null => {
 };
 
 export const parseTime = (text: string, defaultDate?: Date): Date | null => {
-    if (!isString(text)) throw new Error('text is not valid');
+    if (!isString(text)) throw new TypeError('text is not valid');
 
     const matchGroups = text.match(RegExp.TimeFormat);
 

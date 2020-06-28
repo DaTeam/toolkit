@@ -5,3 +5,4 @@ ios
 .jest
 **/*.snap
 **/*.png
+**/*.spec.ts
