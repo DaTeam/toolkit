@@ -37,6 +37,10 @@ export class RegExp {
     public static readonly TimeFormat = /^(?:([0-2](?:(?<=[0-1])[0-9]|(?<=2)[0-4])):([0-5][0-9])(?:[:]([0-5][0-9]))?)?$/; // eslint-disable-line max-len
     public static readonly TimeInputPattern = /^(\d{1,2})?(:)?(\d{1,2})?$/; // eslint-disable-line no-useless-escape
     public static readonly TimeAutoColon = /^(\d{2})$/;
+    public static readonly DateTimeFormat = /^((?:[0-3])(?:(?<=[0-2])[0-9]|(?<=3)[01]))[-\/]((?:[01])(?:(?<=0)[0-9]|(?<=1)[0-2]))[-\/](\d{4})(?: ([0-2](?:(?<=[0-1])[0-9]|(?<=2)[0-4])):([0-5][0-9]))$/; // eslint-disable-line no-useless-escape, max-len
+    public static readonly DateTimeInputPattern = /^(\d{1,2})?(?:\/)?(\d{1,2})?(?:\/)?(\d{1,4})?(?: )?(\d{1,2})?(?::)?(\d{1,2})?$/;
+    public static readonly DateTimeAutoColon = /^(\d{2}\/\d{2}\/\d{4} \d{2})$/;
+    public static readonly DateTimeAutoSpace = /^(\d{2}\/\d{2}\/\d{4})$/;
     public static readonly StringFormat = /{(\d+)}/g;
 }
 
