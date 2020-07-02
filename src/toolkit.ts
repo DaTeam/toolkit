@@ -936,6 +936,21 @@ export const quickClone = <T>(arg: T): T | null => {
         return null;
     }
 };
+// export const objectPick = <T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> => {
+
+export const computeOptions = <T>(defaultOptions: T, options: Partial<T> | undefined): T => {
+    if (!isObjectLike(defaultOptions)) throw new TypeError('defaultOptions is not valid');
+    if (!isObjectLike(options)) {
+        if (isDefined(options)) throw new TypeError('options is not valid');
+
+        return defaultOptions;
+    }
+
+    const keys = (Object.keys(defaultOptions) as Array<keyof T>);
+    const pickedOptions = objectPick<Partial<T>, keyof T>(options!, keys);
+
+    return pureObjectExtend(defaultOptions, pickedOptions);
+}
 
 // type Timeout
 
@@ -995,23 +1010,38 @@ export const propertyIsEnumerable = <T, K extends keyof T>(obj: T, prop: K): boo
 // to Object.assign to ensure we correctly copy data instead of mutating
 export const pureObjectAssign = (...values: any[]): any | null => {
     if (!isArray(values)) return null;
-    if (values.some(val => !isObjectLike(val))) return null;
 
-    return Object.assign({}, ...values);
+    const actualObjects = values.reduce((acc, val) => {
+        if (isObjectLike(val)) acc.push(val);
+
+        return acc;
+    }, []);
+
+    if (actualObjects.length === 0) return null;
+
+    return Object.assign({}, ...actualObjects);
 };
 
 // An alternative version of pureObjectAssign which ignores undefined values
 // It only applys to object's first level properties
 export const pureObjectExtend = (...values: any[]): any | null => {
-    const obj = pureObjectAssign(...values);
-    if (obj === null) return null;
-    if (isObjectLike(obj)) {
-        (obj as Object).forEachProperty((value, key) => {
-            if (value === undef) delete obj[key];
-        });
-    }
+    if (!isArray(values)) return null;
 
-    return obj;
+    const actualObjects = values.reduce((acc, val) => {
+        if (isObjectLike(val)) acc.push({ ...val });
+
+        return acc;
+    }, []);
+
+    if (actualObjects.length === 0) return null;
+
+    actualObjects.forEach((obj: Object) => {
+        (obj as Object).forEachProperty((value, key) => {
+            if (value === undef) delete (obj as Record<string, any>)[key];
+        });
+    });
+
+    return pureObjectAssign(...actualObjects);
 };
 
 export const objectPick = <T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> => {
