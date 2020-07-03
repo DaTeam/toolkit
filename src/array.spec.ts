@@ -1,7 +1,8 @@
 import {
     addRange,
     clearCollection,
-    removeAt
+    removeAt,
+    take
 } from './toolkit';
 
 describe('array functions', () => {
@@ -86,6 +87,51 @@ describe('array functions', () => {
             expect(() => typelessRemoveAt([1, 2, 3])).toThrow();
             expect(() => typelessRemoveAt([1, 2, 3], '')).toThrow();
             expect(() => typelessRemoveAt([1, 2, 3], null)).toThrow();
+        });
+    });
+
+    describe('take', () => {
+        it('should return the correct arrays depending on the number of element requested', () => {
+            const src = [1, 2, 3, 4, 5, 6, 7];
+
+            expect(take(src, 0)).toEqual([]);
+            expect(take(src, 3)).toEqual([1, 2, 3]);
+            expect(take(src, 6)).toEqual([1, 2, 3, 4, 5, 6]);
+            expect(take(src, 7)).toEqual(src);
+            expect(take(src, 10)).toEqual(src);
+        });
+        it('should return the correct arrays depending on the number of element requested and the start index', () => {
+            const src = [1, 2, 3, 4, 5, 6, 7];
+
+            expect(take(src, 0, 2)).toEqual([]);
+            expect(take(src, 3, 2)).toEqual([3, 4, 5]);
+            expect(take(src, 4, 2)).toEqual([3, 4, 5, 6]);
+            expect(take(src, 7, 2)).toEqual([3, 4, 5, 6, 7]);
+            expect(take(src, 10, 2)).toEqual([3, 4, 5, 6, 7]);
+        });
+        it('should throw if the first parameter is not the expected array', () => {
+            const typelessTake: any = take;
+
+            expect(() => typelessTake()).toThrow();
+            expect(() => typelessTake({})).toThrow();
+            expect(() => typelessTake('')).toThrow();
+            expect(() => typelessTake(2)).toThrow();
+        });
+        it('should throw if the second parameter is not the expected count number', () => {
+            const typelessTake: any = take;
+
+            expect(() => typelessTake([], '')).toThrow();
+            expect(() => typelessTake([], NaN)).toThrow();
+            expect(() => typelessTake([], {})).toThrow();
+            expect(() => typelessTake([], null)).toThrow();
+        });
+        it('should throw if the third parameter is provided but not a number as expected', () => {
+            const typelessTake: any = take;
+
+            expect(() => typelessTake([], 2, '')).toThrow();
+            expect(() => typelessTake([], 2, NaN)).toThrow();
+            expect(() => typelessTake([], 2, {})).toThrow();
+            expect(() => typelessTake([], 2, null)).toThrow();
         });
     });
 });

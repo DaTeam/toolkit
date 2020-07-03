@@ -458,6 +458,14 @@ export const replaceCollectionItem = <T>(array: T[], item: T, predicate: (item: 
     indexToReplace.forEach(index => array.splice(index, 1, item));
 };
 
+export const take = <T>(array: T[], count: number, from: number = 0): T[] => {
+    if (!isArray(array)) throw new TypeError('array is not valid');
+    if (!isValidNumber(count)) throw new TypeError('count is not valid');
+    if (!isValidNumber(from)) throw new TypeError('from is not valid');
+
+    return array.slice(from, from + count);
+}
+
 /**
  ** String
  */
