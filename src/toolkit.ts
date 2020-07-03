@@ -464,7 +464,7 @@ export const take = <T>(array: T[], count: number, from: number = 0): T[] => {
     if (!isValidNumber(from)) throw new TypeError('from is not valid');
 
     return array.slice(from, from + count);
-}
+};
 
 /**
  ** String
@@ -944,7 +944,6 @@ export const quickClone = <T>(arg: T): T | null => {
         return null;
     }
 };
-// export const objectPick = <T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> => {
 
 export const computeOptions = <T>(defaultOptions: T, options: Partial<T> | undefined): T => {
     if (!isObjectLike(defaultOptions)) throw new TypeError('defaultOptions is not valid');
@@ -958,7 +957,7 @@ export const computeOptions = <T>(defaultOptions: T, options: Partial<T> | undef
     const pickedOptions = objectPick<Partial<T>, keyof T>(options!, keys);
 
     return pureObjectExtend(defaultOptions, pickedOptions);
-}
+};
 
 // type Timeout
 
@@ -1598,6 +1597,21 @@ if (!Object.prototype.mapEachProperty) {
         writable: true
     });
 }
+
+/*
+ ** Array Extension
+ */
+
+declare global {
+    interface Array<T> {
+        take<T>(count: number, from: number): T[];
+    }
+}
+
+Array.prototype.take = Array.prototype.take ||
+    function takeArray<T>(this: T[], count: number, from: number = 0): T[] {
+        return take(this, count, from);
+    };
 
 /*
  ** Map Extension
