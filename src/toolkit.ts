@@ -1604,7 +1604,7 @@ if (!Object.prototype.mapEachProperty) {
 
 declare global {
     interface Array<T> {
-        take<T>(count: number, from: number): T[];
+        take<T>(count: number, from?: number): T[];
     }
 }
 
