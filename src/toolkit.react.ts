@@ -486,28 +486,23 @@ export const useLogRenders = (key: string, interval?: number) => {
         return format;
     }, [key, interval]);
 
+    const onLog = useCallback((...args: any[]) => {
+        console.log(...args); // eslint-disable-line no-console
+        sinceLastLogCounter.current = 0;
+    }, []);
     const log = useMemo(() => {
-        const fn = (...args) => {
-            console.log(...args);
-            sinceLastLogCounter.current = 0;
-        };
-
         if (isValidNumber(interval)) {
-            const debounce = new DebounceInterval(fn, interval);
+            const debounce = new DebounceInterval(onLog, interval);
 
             return debounce.push;
         }
 
-        return fn;
-    }, []);
-
-    const pushLog = () => {
-        log(stringFormat(logFormat, counter.current, sinceLastLogCounter.current));
-    };
+        return onLog;
+    }, [interval, onLog]);
 
     useEffect(() => {
         counter.current += 1;
         sinceLastLogCounter.current += 1;
-        pushLog();
+        log(stringFormat(logFormat, counter.current, sinceLastLogCounter.current));
     }); // eslint-disable-line react-hooks/exhaustive-deps
 };
