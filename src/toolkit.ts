@@ -439,6 +439,12 @@ export const removeAt = <T>(array: T[], index: number): void => {
     array.splice(index, 1);
 };
 
+export const insertAt = <T>(array: T[], index: number, item: T): void => {
+    if (!isArray(array)) return;
+
+    array.splice(index, 0, item);
+};
+
 export const replaceAt = <T>(array: T[], index: number, item: T): void => {
     if (!isArray(array)) return;
 
@@ -871,6 +877,21 @@ export const mapToDeepObject = (target: any, src: any, options: MapOptions = {
     innerMapToDeepObject(target, src, internalOptions);
 };
 
+export const compareShallowObject = (obj: any, withObj: any): boolean => {
+    if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
+    if (!isObjectLike(withObj)) throw new TypeError('withObj is not valid');
+
+    const enumarableObj = objectDefinedPropsOnly(obj);
+    const enumarableWithObj = objectDefinedPropsOnly(withObj);
+
+    const objKeys = Object.keys(enumarableObj);
+    const withObjKeys = Object.keys(enumarableWithObj);
+
+    if (compareCollection(objKeys, withObjKeys).length > 0) return false;
+
+    return !objKeys.some(key => obj[key] !== withObj[key]);
+};
+
 export const getPropertySafe = (obj: any, propertyAccessor: string): any | undefined => {
     if (!isString(propertyAccessor)) return null;
     const retValue = propertyAccessor
@@ -946,9 +967,9 @@ export const quickClone = <T>(arg: T): T | null => {
 };
 
 export const computeOptions = <T>(defaultOptions: T, options: Partial<T> | undefined): T => {
-    if (!isObjectLike(defaultOptions)) throw new TypeError('defaultOptions is not valid');
+    if (!isObjectLike(defaultOptions)) throw new TypeError('defaultOptions are not valid');
     if (!isObjectLike(options)) {
-        if (isDefined(options)) throw new TypeError('options is not valid');
+        if (isDefined(options)) throw new TypeError('options are not valid');
 
         return defaultOptions;
     }
@@ -1035,20 +1056,34 @@ export const pureObjectExtend = (...values: any[]): any | null => {
     if (!isArray(values)) return null;
 
     const actualObjects = values.reduce((acc, val) => {
-        if (isObjectLike(val)) acc.push({ ...val });
+        if (isObjectLike(val)) acc.push(objectDefinedPropsOnly(val));
 
         return acc;
     }, []);
 
     if (actualObjects.length === 0) return null;
 
-    actualObjects.forEach((obj: Object) => {
-        (obj as Object).forEachProperty((value, key) => {
-            if (value === undef) delete (obj as Record<string, any>)[key];
-        });
-    });
+    // actualObjects.forEach((obj: Object) => {
+    //     (obj as Object).forEachProperty((value, key) => {
+    //         if (value === undef) delete (obj as Record<string, any>)[key];
+    //     });
+    // });
 
     return pureObjectAssign(...actualObjects);
+};
+
+export const objectDefinedPropsOnly = <T>(obj: T): Partial<T> => {
+    if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
+
+    return Object.defineProperties(
+        {},
+        Object.assign(
+            {},
+            ...(Object.keys(obj) as (keyof T)[])
+                .filter(key => propertyIsEnumerable(obj, key) && !isUndefined(obj[key]))
+                .map(key => ({ [key]: Object.getOwnPropertyDescriptor(obj, key) }))
+        )
+    );
 };
 
 export const objectPick = <T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> => {
@@ -1141,7 +1176,7 @@ export class Debounce {
         this.timeout = timeout;
     }
 
-    push(...args: any[]): void {
+    push = (...args: any[]): void => {
         clearTimeout(this.timeoutId);
 
         try {
@@ -1152,6 +1187,10 @@ export class Debounce {
         catch (err) {
             // Ignore
         }
+    }
+
+    clear = (): void => {
+        clearTimeout(this.timeoutId);
     }
 }
 
@@ -1167,7 +1206,7 @@ export class DebounceInterval {
         this.timeout = timeout;
     }
 
-    push(...args: any[]): void {
+    push = (...args: any[]): void => {
         this.lastValue = args;
 
         if (this.pushAwaiting === false) {
@@ -1186,7 +1225,7 @@ export class DebounceInterval {
         }
     }
 
-    clear() {
+    clear = (): void => {
         clearTimeout(this.timeoutId);
     }
 }
