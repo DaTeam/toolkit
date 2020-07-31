@@ -24,7 +24,9 @@ import {
     AnyFunctionReturning,
     Debounce,
     DebounceInterval,
-    objectPick
+    objectPick,
+    stringFormat,
+    isValidNumber
 } from './toolkit';
 
 /*
@@ -181,7 +183,7 @@ export const useInternalValue = <S extends any>(
     externalValue: StateValue<S> | null,
     defaultValue: StateValue<S> | null = null
 ): [S | null, React.Dispatch<React.SetStateAction<S | null>>] => {
-    const [internalValue, setInternalValue] = useState(defaultValue);
+    const [internalValue, setInternalValue] = useState(externalValue || defaultValue);
 
     useEffect(() => {
         if (externalValue !== internalValue) {
@@ -472,3 +474,40 @@ export const useDebounceValue = <T>(input: T, timeout: number = 0, interval: boo
 
 export const usePick = <T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> =>
     useMemo(() => objectPick(obj, keys), [obj]); // eslint-disable-line react-hooks/exhaustive-deps
+
+export const useLogRenders = (key: string, interval?: number) => {
+    const counter = useRef(0);
+    const sinceLastLogCounter = useRef(0);
+    const logFormat = useMemo(() => {
+        let format = `[${key}] Total Render = {0}`;
+
+        if (isValidNumber(interval)) format += ' | Since last log = {1}';
+
+        return format;
+    }, [key, interval]);
+
+    const log = useMemo(() => {
+        const fn = (...args) => {
+            console.log(...args);
+            sinceLastLogCounter.current = 0;
+        };
+
+        if (isValidNumber(interval)) {
+            const debounce = new DebounceInterval(fn, interval);
+
+            return debounce.push;
+        }
+
+        return fn;
+    }, []);
+
+    const pushLog = () => {
+        log(stringFormat(logFormat, counter.current, sinceLastLogCounter.current));
+    };
+
+    useEffect(() => {
+        counter.current += 1;
+        sinceLastLogCounter.current += 1;
+        pushLog();
+    }); // eslint-disable-line react-hooks/exhaustive-deps
+};
