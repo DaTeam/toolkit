@@ -472,6 +472,12 @@ export const take = <T>(array: T[], count: number, from: number = 0): T[] => {
     return array.slice(from, from + count);
 };
 
+export const filterDefined = <T>(array: T[]): T[] => {
+    if (!isArray(array)) throw new TypeError('array is not valid');
+
+    return array.filter(isDefined);
+};
+
 /**
  ** String
  */
@@ -1644,12 +1650,18 @@ if (!Object.prototype.mapEachProperty) {
 declare global {
     interface Array<T> {
         take(this: T[], count: number, from?: number): T[];
+        filterDefined(this: T[]): T[];
     }
 }
 
 Array.prototype.take = Array.prototype.take ||
     function takeArray<T>(this: T[], count: number, from: number = 0): T[] {
         return take(this, count, from);
+    };
+
+Array.prototype.filterDefined = Array.prototype.filterDefined ||
+    function filterDefinedArray<T>(this: T[]): T[] {
+        return filterDefined(this);
     };
 
 /*
