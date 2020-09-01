@@ -448,7 +448,7 @@ export const useDebounce = (handler: Function, timeout: number = 0, interval: bo
         return new Debounce((...args) => {
             handler(...args);
         }, timeout);
-    }, [handler, timeout, interval]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     return useCallback((...args) => {
         debounce.push(...args);
