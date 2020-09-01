@@ -31,6 +31,7 @@
         "no-case-declarations": "off",
         "import/no-extraneous-dependencies": "off",
         "template-curly-spacing": "off",
+        "func-style": "off",
         "new-cap": "off",
         "no-fallthrough": "off",
         "no-undef": "off",
@@ -185,13 +186,6 @@
                 "allowArrayEnd": true,
                 "allowClassStart": true,
                 "allowClassEnd": false
-            }
-        ],
-        "func-style": [
-            "error",
-            "expression",
-            {
-                "allowArrowFunctions": true
             }
         ],
         "max-len": [

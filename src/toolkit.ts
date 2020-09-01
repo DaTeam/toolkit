@@ -1,4 +1,3 @@
-/* eslint-disable func-style */
 /* eslint-disable no-extend-native */
 
 export enum Type {
@@ -1120,6 +1119,43 @@ export const objectOmit = <T, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> 
                 .map(key => ({ [key]: Object.getOwnPropertyDescriptor(obj, key) }))
         )
     );
+};
+
+/*
+ ** Maps each level of a deep object
+ ** > an object, to navigate through
+ ** > a function, called to compute the next level and the current value
+ **     should return the following format as an array: [nextLevel, currentValue]
+ ** > [Optional] a number, limit of level to process
+ ** > [Optional] a boolean, setting wether the returned array should be filled with null value until reaching the limit or not
+ ** => Returns an array containing all the mapped values
+ ** [Usage]
+ **     const data = { id: '1', parent: { id: '2', parent: { id: '3', parent: null } } };
+ **     objectDeepMap(data, obj => [obj.parent, obj.id]);
+ */
+export const objectDeepMap = <T extends any, R extends any>(
+    obj: T,
+    computeFn: (obj: T) => [T, R],
+    limit?: number,
+    autoFill?: boolean
+): R[] => {
+    if (!isObjectLike(obj) || !isFunction(computeFn)) return [];
+    if (!checkType(limit, Type.Undefined | Type.Number | Type.Valid)) throw new TypeError('limit is not valid');
+
+    const result = [];
+    let nbLevelLeft = limit ?? -1;
+    let current = obj;
+    let value;
+
+    do {
+        [current, value] = computeFn(current);
+        result.push(value);
+        nbLevelLeft -= 1;
+    } while (isObjectLike(current) && nbLevelLeft !== 0);
+
+    if (autoFill === true) result.push(...Array(nbLevelLeft).fill(null));
+
+    return result;
 };
 
 /*
