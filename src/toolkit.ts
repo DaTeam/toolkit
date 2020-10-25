@@ -27,6 +27,8 @@ let undef: undefined;
 
 type NativeRegExp = globalThis.RegExp;
 
+export const requireExtendedPrototypes = (): void => { };
+
 export class RegExp {
     public static readonly EscapedIsoDate = /^\$\{DATE_(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)\}$/;
     public static readonly IsoDate = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
@@ -41,6 +43,7 @@ export class RegExp {
     public static readonly DateTimeAutoColon = /^(\d{2}\/\d{2}\/\d{4} \d{2})$/;
     public static readonly DateTimeAutoSpace = /^(\d{2}\/\d{2}\/\d{4})$/;
     public static readonly StringFormat = /{(\d+)}/g;
+    public static readonly LocalIP = /^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/;
 }
 
 const innerMapToDeepObject = (target: any, src: any, options: MapOptions): void => {
@@ -83,6 +86,12 @@ type DiffOptions = {
     format?: (item: any) => any;
     alternativeFormat?: (item: any) => any;
 };
+
+export const isLocalhost = Boolean(
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '[::1]' || // [::1] is the IPv6 localhost address
+    window.location.hostname.match(RegExp.LocalIP) // 127.0.0.1/8 is considered localhost for IPv4.
+);
 
 /**
  ** Type checks
@@ -693,6 +702,19 @@ export const parseTime = (text: string, defaultDate?: Date): Date | null => {
     }
 };
 
+// TOOD: handle this format : 2020-09-17T00:00:00Z https://www.regextester.com/97766
+
+export const parseIsoDate = (value: string): Date => {
+    if (!isString(value)) throw new TypeError('value is not valid');
+
+    const date = new Date(value);
+    const matches = value.match(RegExp.IsoDate);
+
+    if (!isValidDate(date) || !isArray(matches)) throw new TypeError('value is not valid');
+
+    return date;
+};
+
 export const safeParseIsoDate = <T>(value: T): Date | T => {
     if (isString(value)) {
         const date = new Date(value);
@@ -1025,7 +1047,7 @@ export const noop = (): void => { };
  ** Objects
  */
 
-export const hasProperty = <T, K extends keyof T>(obj: T, prop: K): boolean => {
+export const hasProperty = <T>(obj: T, prop: any): prop is keyof T => {
     if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
     if (!isString(prop) && !isNumber(prop)) throw new TypeError('prop is not valid');
 
@@ -1101,6 +1123,29 @@ export const objectPick = <T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> 
             {},
             ...keys
                 .filter(key => propertyIsEnumerable(obj, key))
+                .map(key => ({ [key]: Object.getOwnPropertyDescriptor(obj, key) }))
+        )
+    );
+};
+
+export const objectPickStrict = <Shape, T>(
+    model: Shape,
+    obj: T
+): T extends Shape ? Exclude<keyof T, keyof Shape> extends never ? T : never : never => {
+    if (!isObjectLike(model)) throw new TypeError('model is not valid');
+    if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
+
+    const mismatchProperties = compareCollection(getObjectKeysDeep(model), getObjectKeysDeep(obj));
+    if (mismatchProperties.length > 0) {
+        throw new Error(`Toolkit -> ${objectPickStrict.name}: source object's and target's properties don't match : ${mismatchProperties.join(', ')}`);
+    }
+
+    return Object.defineProperties(
+        {},
+        Object.assign(
+            {},
+            ...Object.keys(model)
+                .filter(key => hasProperty(obj, key) && propertyIsEnumerable(obj, key))
                 .map(key => ({ [key]: Object.getOwnPropertyDescriptor(obj, key) }))
         )
     );
@@ -1272,10 +1317,12 @@ export class DebounceInterval {
     }
 }
 
-export class Observer {
-    protected subscribers: Function[] = [];
+type ObserverCallback<T> = (data: T) => unknown;
 
-    subscribe(callback: Function) {
+export class Observer<T extends any = any, CallbackType extends Function = ObserverCallback<T>> {
+    protected subscribers: CallbackType[] = [];
+
+    subscribe(callback: CallbackType) {
         this.subscribers.push(callback);
 
         return () => {
@@ -1283,12 +1330,18 @@ export class Observer {
         };
     }
 
-    notify(data?: any) {
+    notify(data: T) {
         this.subscribers.forEach(sub => sub(data));
     }
 }
 
-export class TimedNotifier extends Observer {
+type TimedNotifierCallback<T> = (
+    data: T,
+    resolve?: (value?: unknown) => void,
+    reject?: (reason?: any) => void
+) => unknown;
+
+export class TimedNotifier<T extends any = any> extends Observer<T, TimedNotifierCallback<T>> {
     private maxTimeout: number;
 
     constructor(maxTimeout = 5000) {
@@ -1299,7 +1352,7 @@ export class TimedNotifier extends Observer {
         this.maxTimeout = maxTimeout;
     }
 
-    async notify(data?: any) {
+    async notify(data: T) {
         return Promise.race([
             Promise.all(this.subscribers.map(sub => new Promise((resolve, reject) => sub(data, resolve, reject)))),
             new Promise(resolve => setTimeout(resolve, this.maxTimeout))
