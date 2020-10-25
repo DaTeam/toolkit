@@ -1,8 +1,8 @@
 {
-    "name": "toolkit",
-    "version": "1.0.0",
-    "description": "The ToolKit !",
-    "main": "src/toolkit.ts",
+    "name": "@dateam/ark",
+    "version": "0.0.3",
+    "description": "",
+    "main": "dist/toolkit.js",
     "scripts": {
         "compile": "tsc --noEmit && npm run lint",
         "lint": "eslint src/*.ts --ext .ts --format codeframe",
@@ -16,7 +16,8 @@
         "url": "git+https://github.com/DaTeam/toolkit.git"
     },
     "keywords": [
-        "toolkit"
+        "toolkit",
+        "utils"
     ],
     "author": "DaTeam S.A.S. (France)",
     "license": "ISC",
