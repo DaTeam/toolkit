@@ -1,15 +1,17 @@
 {
     "name": "@dateam/ark",
-    "version": "0.0.3",
+    "version": "0.0.8",
     "description": "",
     "main": "dist/toolkit.js",
+    "types": "dist/toolkit.d.ts",
     "scripts": {
         "compile": "tsc --noEmit && npm run lint",
         "lint": "eslint src/*.ts --ext .ts --format codeframe",
         "build": "tsc",
         "validate": "npm run compile && npm run test",
         "test": "jest",
-        "test-cov": "jest --coverage"
+        "test-cov": "jest --coverage",
+        "prepublish": "npm run build"
     },
     "repository": {
         "type": "git",
