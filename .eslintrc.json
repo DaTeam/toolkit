@@ -31,6 +31,7 @@
         "no-case-declarations": "off",
         "import/no-extraneous-dependencies": "off",
         "template-curly-spacing": "off",
+        "func-style": "off",
         "new-cap": "off",
         "no-fallthrough": "off",
         "no-undef": "off",
@@ -42,6 +43,7 @@
         "object-curly-newline": "off",
         "import/prefer-default-export": "off",
         "camelcase": "off",
+        "no-redeclare": "off",
         "no-unused-vars": [
             "off",
             {
@@ -69,7 +71,7 @@
         ],
         "function-paren-newline": [
             "error",
-            "multiline"
+            "consistent"
         ],
         "linebreak-style": [
             "error",
@@ -187,13 +189,6 @@
                 "allowClassEnd": false
             }
         ],
-        "func-style": [
-            "error",
-            "expression",
-            {
-                "allowArrowFunctions": true
-            }
-        ],
         "max-len": [
             "error",
             120,
@@ -258,7 +253,15 @@
         "no-eval": "error",
         "no-loop-func": "error",
         "no-tabs": "error",
-        "no-console": "warn",
+        "no-console": [
+            "warn",
+            {
+                "allow": [
+                    "warn",
+                    "error"
+                ]
+            }
+        ],
         "no-var": "warn",
         "no-nested-ternary": "error",
         "no-multi-assign": "error",

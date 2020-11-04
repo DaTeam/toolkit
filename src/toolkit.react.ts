@@ -24,7 +24,10 @@ import {
     AnyFunctionReturning,
     Debounce,
     DebounceInterval,
-    objectPick
+    objectPick,
+    stringFormat,
+    isValidNumber,
+    take
 } from './toolkit';
 
 /*
@@ -181,7 +184,7 @@ export const useInternalValue = <S extends any>(
     externalValue: StateValue<S> | null,
     defaultValue: StateValue<S> | null = null
 ): [S | null, React.Dispatch<React.SetStateAction<S | null>>] => {
-    const [internalValue, setInternalValue] = useState(defaultValue);
+    const [internalValue, setInternalValue] = useState(externalValue || defaultValue);
 
     useEffect(() => {
         if (externalValue !== internalValue) {
@@ -294,9 +297,8 @@ export const createGlobalStateHook = <S extends any>(initValue: StateValue<S>) =
         observer.notify(newState);
     };
 
-    return (value?: S, deps: React.DependencyList[] = []): [S, React.Dispatch<React.SetStateAction<S>>] => {
+    return (value?: S, deps: React.DependencyList = []): [S, React.Dispatch<React.SetStateAction<S>>] => {
         const [state, setState] = useState(lastKnownState);
-
         const memoizedValue = useMemo(() => value, deps); // eslint-disable-line react-hooks/exhaustive-deps
 
         useEffect(() => {
@@ -311,7 +313,7 @@ export const createGlobalStateHook = <S extends any>(initValue: StateValue<S>) =
             return unsubscribe;
         }, [memoizedValue]); // eslint-disable-line react-hooks/exhaustive-deps
 
-        return [state, applyStateChange];
+        return useMemo(() => [state, applyStateChange], [state]);
     };
 };
 
@@ -446,7 +448,7 @@ export const useDebounce = (handler: Function, timeout: number = 0, interval: bo
         return new Debounce((...args) => {
             handler(...args);
         }, timeout);
-    }, [handler, timeout, interval]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     return useCallback((...args) => {
         debounce.push(...args);
@@ -472,3 +474,165 @@ export const useDebounceValue = <T>(input: T, timeout: number = 0, interval: boo
 
 export const usePick = <T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> =>
     useMemo(() => objectPick(obj, keys), [obj]); // eslint-disable-line react-hooks/exhaustive-deps
+
+export const useLogRenders = (key: string, interval?: number) => {
+    const counter = useRef(0);
+    const sinceLastLogCounter = useRef(0);
+    const logFormat = useMemo(() => {
+        let format = `[${key}] Total Render = {0}`;
+
+        if (isValidNumber(interval)) format += ' | Since last log = {1}';
+
+        return format;
+    }, [key, interval]);
+
+    const onLog = useCallback((...args: any[]) => {
+        console.log(...args); // eslint-disable-line no-console
+        sinceLastLogCounter.current = 0;
+    }, []);
+    const log = useMemo(() => {
+        if (isValidNumber(interval)) {
+            const debounce = new DebounceInterval(onLog, interval);
+
+            return debounce.push;
+        }
+
+        return onLog;
+    }, [interval, onLog]);
+
+    useEffect(() => {
+        counter.current += 1;
+        sinceLastLogCounter.current += 1;
+        log(stringFormat(logFormat, counter.current, sinceLastLogCounter.current));
+    }); // eslint-disable-line react-hooks/exhaustive-deps
+};
+
+/*
+ ** ==============================================
+ ** History State
+ ** ==============================================
+ */
+
+type HistoryState<T> = {
+    history: T[];
+    pending: T | null;
+    currentPosition: number;
+};
+
+type HistoryActions<T> = {
+    push: (item: T) => void;
+    setPending: (item: T) => void;
+    replace: (item: T) => void;
+    goTo: (item: T) => void;
+};
+
+type History<T> =
+    & Pick<HistoryState<T>, 'history'>
+    & HistoryActions<T>
+    & {
+        current: T | null;
+        previous: T | null;
+        next: T | null;
+    };
+
+const trimForwardHistory = <T>(history: T[], currentIndex: number) => {
+    if (currentIndex < 0) return [];
+    if (history.length === (currentIndex + 1)) return [...history];
+
+    return take(history, currentIndex + 1);
+};
+
+export const createHistoryHook = <T>(matchPredicate: (item: T, compareWith: T) => boolean) => {
+    const useHistoryState = createGlobalStateHook<HistoryState<T>>({
+        history: [],
+        pending: null,
+        currentPosition: 0
+    });
+
+    return (): History<T> => {
+        const [state, setState] = useHistoryState();
+
+        return useMemo(() => {
+            const { history, currentPosition, pending } = state;
+            const positionOffset = pending ? 1 : 0;
+            const position = currentPosition + positionOffset;
+
+            return {
+                history,
+                current: pending ?? history[position] ?? null,
+                previous: position > 0 ? (history[position - 1] ?? null) : null,
+                next: (position + 1) < history.length ? (history[position + 1] ?? null) : null,
+                push: (item: T) => {
+                    if (!isDefined(item)) throw new TypeError('push history: item is not valid');
+
+                    if (pending && !matchPredicate(pending, item)) {
+                        console.warn('push history: new item doesn\'t match pending item');
+                        return;
+                    }
+
+                    if (pending && history[currentPosition] === pending) {
+                        return setState({
+                            history,
+                            currentPosition,
+                            pending: null
+                        });
+                    }
+
+                    let data: T[];
+
+                    if (history.length === currentPosition + 1) {
+                        data = [...history];
+                    }
+                    else {
+                        data = trimForwardHistory(history, currentPosition);
+                    }
+
+                    data.push(item);
+
+                    setState({
+                        history: data,
+                        currentPosition: data.length - 1,
+                        pending: null
+                    });
+                },
+                replace: (item: T) => {
+                    if (!isDefined(item)) throw new TypeError('replace history: item is not valid');
+
+                    const newPosition = currentPosition - (pending ? 0 : 1);
+                    const newState: HistoryState<T> = {
+                        history: trimForwardHistory(history, newPosition),
+                        currentPosition: newPosition,
+                        pending: item
+                    };
+
+                    setState(newState);
+                },
+                setPending: (item: T) => {
+                    if (!isDefined(item)) throw new TypeError('setPending history: item is not valid');
+
+                    const newState: HistoryState<T> = {
+                        history,
+                        currentPosition,
+                        pending: item
+                    };
+
+                    setState(newState);
+                },
+                goTo: (item: T) => {
+                    if (!isDefined(item)) throw new TypeError('goTo history: item is not valid');
+
+                    const idx = history.findIndex(historyItem => historyItem === item);
+                    if (idx === -1) throw new TypeError('goTo history: route not found');
+
+                    const newState: HistoryState<T> = {
+                        history,
+                        currentPosition: idx,
+                        pending: history[idx]
+                    };
+
+                    setState(newState);
+                }
+            };
+        }, [state, setState]);
+    };
+};

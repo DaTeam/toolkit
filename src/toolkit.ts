@@ -1,4 +1,3 @@
-/* eslint-disable func-style */
 /* eslint-disable no-extend-native */
 
 export enum Type {
@@ -28,6 +27,8 @@ let undef: undefined;
 
 type NativeRegExp = globalThis.RegExp;
 
+export const requireExtendedPrototypes = (): void => { };
+
 export class RegExp {
     public static readonly EscapedIsoDate = /^\$\{DATE_(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)\}$/;
     public static readonly IsoDate = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
@@ -42,6 +43,7 @@ export class RegExp {
     public static readonly DateTimeAutoColon = /^(\d{2}\/\d{2}\/\d{4} \d{2})$/;
     public static readonly DateTimeAutoSpace = /^(\d{2}\/\d{2}\/\d{4})$/;
     public static readonly StringFormat = /{(\d+)}/g;
+    public static readonly LocalIP = /^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/;
 }
 
 const innerMapToDeepObject = (target: any, src: any, options: MapOptions): void => {
@@ -250,11 +252,16 @@ export const assertIsNull: (value: any, msg?: string) => asserts value is null =
  */
 
 export const addRange = (src: any[], newElements: any[]) => {
+    if (!isArray(src)) throw new TypeError('src param is not valid');
+    if (!isArray(newElements)) throw new TypeError('newElements param is not valid');
+
     ArrayProto.push.apply(src, newElements);
 };
 
 export const clearCollection = (collection: any[]) => {
-    if (isArray(collection)) collection.splice(0, collection.length);
+    if (!isArray(collection)) throw new TypeError('collection is not valid');
+
+    collection.splice(0, collection.length);
 };
 
 export const diffCollection = (
@@ -427,11 +434,17 @@ export const removeFromCollection = <T>(
     return true;
 };
 
-export const removeAt = <T>(array: T[], index: number): boolean => {
-    if (!isArray(array)) return false;
+export const removeAt = <T>(array: T[], index: number): void => {
+    if (!isArray(array)) throw new TypeError('array is not valid');
+    if (!isValidNumber(index)) throw new TypeError('index is not valid');
 
     array.splice(index, 1);
-    return true;
+};
+
+export const insertAt = <T>(array: T[], index: number, item: T): void => {
+    if (!isArray(array)) return;
+
+    array.splice(index, 0, item);
 };
 
 export const replaceAt = <T>(array: T[], index: number, item: T): void => {
@@ -451,6 +464,20 @@ export const replaceCollectionItem = <T>(array: T[], item: T, predicate: (item: 
     }, [] as number[]);
 
     indexToReplace.forEach(index => array.splice(index, 1, item));
+};
+
+export const take = <T>(array: T[], count: number, from: number = 0): T[] => {
+    if (!isArray(array)) throw new TypeError('array is not valid');
+    if (!isValidNumber(count)) throw new TypeError('count is not valid');
+    if (!isValidNumber(from)) throw new TypeError('from is not valid');
+
+    return array.slice(from, from + count);
+};
+
+export const filterDefined = <T>(array: T[]): T[] => {
+    if (!isArray(array)) throw new TypeError('array is not valid');
+
+    return array.filter(isDefined);
 };
 
 /**
@@ -574,10 +601,10 @@ export const parseDate = (text: string): Date | null => {
 
             if (isValidNumber(value)) return value;
 
-            throw new Error('value is not valid');
+            throw new TypeError('value is not valid');
         }
 
-        if (!optional) throw new Error('value is not valid');
+        if (!optional) throw new TypeError('value is not valid');
 
         return 0;
     };
@@ -622,7 +649,7 @@ export const parseDate = (text: string): Date | null => {
 };
 
 export const parseTime = (text: string, defaultDate?: Date): Date | null => {
-    if (!isString(text)) throw new Error('text is not valid');
+    if (!isString(text)) throw new TypeError('text is not valid');
 
     const matchGroups = text.match(RegExp.TimeFormat);
 
@@ -667,6 +694,19 @@ export const parseTime = (text: string, defaultDate?: Date): Date | null => {
     catch {
         return null;
     }
+};
+
+// TOOD: handle this format : 2020-09-17T00:00:00Z https://www.regextester.com/97766
+
+export const parseIsoDate = (value: string): Date => {
+    if (!isString(value)) throw new TypeError('value is not valid');
+
+    const date = new Date(value);
+    const matches = value.match(RegExp.IsoDate);
+
+    if (!isValidDate(date) || !isArray(matches)) throw new TypeError('value is not valid');
+
+    return date;
 };
 
 export const safeParseIsoDate = <T>(value: T): Date | T => {
@@ -858,6 +898,21 @@ export const mapToDeepObject = (target: any, src: any, options: MapOptions = {
     innerMapToDeepObject(target, src, internalOptions);
 };
 
+export const compareShallowObject = (obj: any, withObj: any): boolean => {
+    if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
+    if (!isObjectLike(withObj)) throw new TypeError('withObj is not valid');
+
+    const enumarableObj = objectDefinedPropsOnly(obj);
+    const enumarableWithObj = objectDefinedPropsOnly(withObj);
+
+    const objKeys = Object.keys(enumarableObj);
+    const withObjKeys = Object.keys(enumarableWithObj);
+
+    if (compareCollection(objKeys, withObjKeys).length > 0) return false;
+
+    return !objKeys.some(key => obj[key] !== withObj[key]);
+};
+
 export const getPropertySafe = (obj: any, propertyAccessor: string): any | undefined => {
     if (!isString(propertyAccessor)) return null;
     const retValue = propertyAccessor
@@ -932,6 +987,20 @@ export const quickClone = <T>(arg: T): T | null => {
     }
 };
 
+export const computeOptions = <T>(defaultOptions: T, options: Partial<T> | undefined): T => {
+    if (!isObjectLike(defaultOptions)) throw new TypeError('defaultOptions are not valid');
+    if (!isObjectLike(options)) {
+        if (isDefined(options)) throw new TypeError('options are not valid');
+
+        return defaultOptions;
+    }
+
+    const keys = (Object.keys(defaultOptions) as Array<keyof T>);
+    const pickedOptions = objectPick<Partial<T>, keyof T>(options!, keys);
+
+    return pureObjectExtend(defaultOptions, pickedOptions);
+};
+
 // type Timeout
 
 export const setTimeoutAsync = <T>(handler: () => T, timeout?: number): Promise<T> =>
@@ -972,7 +1041,7 @@ export const noop = (): void => { };
  ** Objects
  */
 
-export const hasProperty = <T, K extends keyof T>(obj: T, prop: K): boolean => {
+export const hasProperty = <T>(obj: T, prop: any): prop is keyof T => {
     if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
     if (!isString(prop) && !isNumber(prop)) throw new TypeError('prop is not valid');
 
@@ -990,23 +1059,52 @@ export const propertyIsEnumerable = <T, K extends keyof T>(obj: T, prop: K): boo
 // to Object.assign to ensure we correctly copy data instead of mutating
 export const pureObjectAssign = (...values: any[]): any | null => {
     if (!isArray(values)) return null;
-    if (values.some(val => !isObjectLike(val))) return null;
 
-    return Object.assign({}, ...values);
+    const actualObjects = values.reduce((acc, val) => {
+        if (isObjectLike(val)) acc.push(val);
+
+        return acc;
+    }, []);
+
+    if (actualObjects.length === 0) return null;
+
+    return Object.assign({}, ...actualObjects);
 };
 
 // An alternative version of pureObjectAssign which ignores undefined values
 // It only applys to object's first level properties
 export const pureObjectExtend = (...values: any[]): any | null => {
-    const obj = pureObjectAssign(...values);
-    if (obj === null) return null;
-    if (isObjectLike(obj)) {
-        (obj as Object).forEachProperty((value, key) => {
-            if (value === undef) delete obj[key];
-        });
-    }
+    if (!isArray(values)) return null;
 
-    return obj;
+    const actualObjects = values.reduce((acc, val) => {
+        if (isObjectLike(val)) acc.push(objectDefinedPropsOnly(val));
+
+        return acc;
+    }, []);
+
+    if (actualObjects.length === 0) return null;
+
+    // actualObjects.forEach((obj: Object) => {
+    //     (obj as Object).forEachProperty((value, key) => {
+    //         if (value === undef) delete (obj as Record<string, any>)[key];
+    //     });
+    // });
+
+    return pureObjectAssign(...actualObjects);
+};
+
+export const objectDefinedPropsOnly = <T>(obj: T): Partial<T> => {
+    if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
+
+    return Object.defineProperties(
+        {},
+        Object.assign(
+            {},
+            ...(Object.keys(obj) as (keyof T)[])
+                .filter(key => propertyIsEnumerable(obj, key) && !isUndefined(obj[key]))
+                .map(key => ({ [key]: Object.getOwnPropertyDescriptor(obj, key) }))
+        )
+    );
 };
 
 export const objectPick = <T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> => {
@@ -1019,6 +1117,29 @@ export const objectPick = <T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> 
             {},
             ...keys
                 .filter(key => propertyIsEnumerable(obj, key))
+                .map(key => ({ [key]: Object.getOwnPropertyDescriptor(obj, key) }))
+        )
+    );
+};
+
+export const objectPickStrict = <Shape, T>(
+    model: Shape,
+    obj: T
+): T extends Shape ? Exclude<keyof T, keyof Shape> extends never ? T : never : never => {
+    if (!isObjectLike(model)) throw new TypeError('model is not valid');
+    if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
+
+    const mismatchProperties = compareCollection(getObjectKeysDeep(model), getObjectKeysDeep(obj));
+    if (mismatchProperties.length > 0) {
+        throw new Error(`Toolkit -> ${objectPickStrict.name}: source object's and target's properties don't match : ${mismatchProperties.join(', ')}`);
+    }
+
+    return Object.defineProperties(
+        {},
+        Object.assign(
+            {},
+            ...Object.keys(model)
+                .filter(key => hasProperty(obj, key) && propertyIsEnumerable(obj, key))
                 .map(key => ({ [key]: Object.getOwnPropertyDescriptor(obj, key) }))
         )
     );
@@ -1037,6 +1158,43 @@ export const objectOmit = <T, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> 
                 .map(key => ({ [key]: Object.getOwnPropertyDescriptor(obj, key) }))
         )
     );
+};
+
+/*
+ ** Maps each level of a deep object
+ ** > an object, to navigate through
+ ** > a function, called to compute the next level and the current value
+ **     should return the following format as an array: [nextLevel, currentValue]
+ ** > [Optional] a number, limit of level to process
+ ** > [Optional] a boolean, setting wether the returned array should be filled with null value until reaching the limit or not
+ ** => Returns an array containing all the mapped values
+ ** [Usage]
+ **     const data = { id: '1', parent: { id: '2', parent: { id: '3', parent: null } } };
+ **     objectDeepMap(data, obj => [obj.parent, obj.id]);
+ */
+export const objectDeepMap = <T extends any, R extends any>(
+    obj: T,
+    computeFn: (obj: T) => [T, R],
+    limit?: number,
+    autoFill?: boolean
+): R[] => {
+    if (!isObjectLike(obj) || !isFunction(computeFn)) return [];
+    if (!checkType(limit, Type.Undefined | Type.Number | Type.Valid)) throw new TypeError('limit is not valid');
+
+    const result = [];
+    let nbLevelLeft = limit ?? -1;
+    let current = obj;
+    let value;
+
+    do {
+        [current, value] = computeFn(current);
+        result.push(value);
+        nbLevelLeft -= 1;
+    } while (isObjectLike(current) && nbLevelLeft !== 0);
+
+    if (autoFill === true) result.push(...Array(nbLevelLeft).fill(null));
+
+    return result;
 };
 
 /*
@@ -1099,7 +1257,7 @@ export class Debounce {
         this.timeout = timeout;
     }
 
-    push(...args: any[]): void {
+    push = (...args: any[]): void => {
         clearTimeout(this.timeoutId);
 
         try {
@@ -1110,6 +1268,10 @@ export class Debounce {
         catch (err) {
             // Ignore
         }
+    }
+
+    clear = (): void => {
+        clearTimeout(this.timeoutId);
     }
 }
 
@@ -1125,7 +1287,7 @@ export class DebounceInterval {
         this.timeout = timeout;
     }
 
-    push(...args: any[]): void {
+    push = (...args: any[]): void => {
         this.lastValue = args;
 
         if (this.pushAwaiting === false) {
@@ -1144,15 +1306,17 @@ export class DebounceInterval {
         }
     }
 
-    clear() {
+    clear = (): void => {
         clearTimeout(this.timeoutId);
     }
 }
 
-export class Observer {
-    protected subscribers: Function[] = [];
+type ObserverCallback<T> = (data: T) => unknown;
 
-    subscribe(callback: Function) {
+export class Observer<T extends any = any, CallbackType extends Function = ObserverCallback<T>> {
+    protected subscribers: CallbackType[] = [];
+
+    subscribe(callback: CallbackType) {
         this.subscribers.push(callback);
 
         return () => {
@@ -1160,12 +1324,18 @@ export class Observer {
         };
     }
 
-    notify(data?: any) {
+    notify(data: T) {
         this.subscribers.forEach(sub => sub(data));
     }
 }
 
-export class TimedNotifier extends Observer {
+type TimedNotifierCallback<T> = (
+    data: T,
+    resolve?: (value?: unknown) => void,
+    reject?: (reason?: any) => void
+) => unknown;
+
+export class TimedNotifier<T extends any = any> extends Observer<T, TimedNotifierCallback<T>> {
     private maxTimeout: number;
 
     constructor(maxTimeout = 5000) {
@@ -1176,7 +1346,7 @@ export class TimedNotifier extends Observer {
         this.maxTimeout = maxTimeout;
     }
 
-    async notify(data?: any) {
+    async notify(data: T) {
         return Promise.race([
             Promise.all(this.subscribers.map(sub => new Promise((resolve, reject) => sub(data, resolve, reject)))),
             new Promise(resolve => setTimeout(resolve, this.maxTimeout))
@@ -1555,6 +1725,27 @@ if (!Object.prototype.mapEachProperty) {
         writable: true
     });
 }
+
+/*
+ ** Array Extension
+ */
+
+declare global {
+    interface Array<T> {
+        take(this: T[], count: number, from?: number): T[];
+        filterDefined(this: T[]): T[];
+    }
+}
+
+Array.prototype.take = Array.prototype.take ||
+    function takeArray<T>(this: T[], count: number, from: number = 0): T[] {
+        return take(this, count, from);
+    };
+
+Array.prototype.filterDefined = Array.prototype.filterDefined ||
+    function filterDefinedArray<T>(this: T[]): T[] {
+        return filterDefined(this);
+    };
 
 /*
  ** Map Extension

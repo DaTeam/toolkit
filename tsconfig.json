@@ -9,22 +9,22 @@
         "src/**/*.d.ts"
     ],
     "compilerOptions": {
-        "target": "esnext",
+        "target": "es5", /* Think about it, esnext fails jest since optional chaining and Nullish Coalescing left as is */
         "lib": [
             "esnext",
             "dom"
         ],
         "outDir": "./dist",
+        "module": "commonjs",
+        "sourceMap": true,
         "allowJs": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
-        "module": "commonjs",
         "moduleResolution": "node",
         "isolatedModules": false,
-        "typeRoots": [],
+        "declaration": true,
         "jsx": "preserve",
         "strict": true /* Enable all strict type-checking options. */,
-        "declaration": false,
         "noImplicitAny": true /* Raise error on expressions and declarations with an implied 'any' type. */,
         "strictNullChecks": true /* Enable strict null checks. */,
         "strictFunctionTypes": true /* Enable strict checking of function types. */,
@@ -40,5 +40,5 @@
         "strictPropertyInitialization": false /* Enable strict checking of property initialization in classes. */,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true
-    }
+    },
 }
