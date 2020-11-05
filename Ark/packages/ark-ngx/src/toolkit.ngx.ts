@@ -3,7 +3,7 @@
  *ngFor="let c of arrayOfObjects | orderBy:'propertyAccessor':false"
 */
 import { Pipe, PipeTransform } from '@angular/core';
-import { orderBy, isArray, isBoolean, isString } from './toolkit';
+import { orderBy, isArray, isBoolean, isString } from '@dateam/ark';
 
 @Pipe({ name: 'orderBy' })
 export default class OrderByPipe implements PipeTransform {

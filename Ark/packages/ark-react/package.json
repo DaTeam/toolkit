@@ -1,7 +1,22 @@
 {
     "name": "@dateam/ark-react",
     "version": "0.0.8",
-    "description": "",
+    "description": "Ark React",
+    "author": "DaTeam S.A.S. (France)",
+    "license": "ISC",
+    "keywords": [
+        "toolkit",
+        "utils",
+        "react"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/DaTeam/toolkit.git"
+    },
+    "homepage": "https://github.com/DaTeam/toolkit#readme",
+    "bugs": {
+        "url": "https://github.com/DaTeam/toolkit/issues"
+    },
     "main": "dist/toolkit.js",
     "types": "dist/toolkit.d.ts",
     "scripts": {
@@ -13,22 +28,8 @@
         "test-cov": "jest --coverage",
         "prepublish": "npm run build"
     },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/DaTeam/toolkit.git"
-    },
-    "keywords": [
-        "toolkit",
-        "utils"
-    ],
-    "author": "DaTeam S.A.S. (France)",
-    "license": "ISC",
-    "bugs": {
-        "url": "https://github.com/DaTeam/toolkit/issues"
-    },
-    "homepage": "https://github.com/DaTeam/toolkit#readme",
     "devDependencies": {
-        "@angular/core": "^10.2.2",
+        "@dateam/ark": "~0.0.8",
         "@types/jest": "^26.0.15",
         "@types/react": "^16.9.55",
         "@typescript-eslint/parser": "^4.6.1",

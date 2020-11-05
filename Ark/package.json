@@ -22,7 +22,10 @@
     },
     "homepage": "https://github.com/DaTeam/toolkit#readme",
     "scripts": {
-        "cleanup": "./cleanup.sh"
+        "cleanup": "./cleanup.sh",
+        "build": "lerna run --scope=@dateam/ark* build",
+        "build:dependent": "lerna run --scope=@doppelmutzi/awesome-app build --include-filtered-dependencies",
+        "build:all": "lerna exec yarn build"
     },
     "devDependencies": {
         "lerna": "^3.22.1"
