@@ -1,6 +1,6 @@
 {
     "name": "@dateam/ark-ngx",
-    "version": "0.0.8",
+    "version": "0.1.0",
     "description": "Ark Ngx",
     "author": "DaTeam S.A.S. (France)",
     "license": "ISC",
@@ -33,8 +33,8 @@
         "@angular/core": "^10.2.2"
     },
     "devDependencies": {
-        "@dateam/ark": "~0.0.8",
         "@angular/core": "^10.2.2",
+        "@dateam/ark": "^0.1.0",
         "@types/jest": "^26.0.15",
         "@typescript-eslint/parser": "^4.6.1",
         "eslint": "^7.12.1",
@@ -43,8 +43,8 @@
         "eslint-plugin-json": "^2.1.2",
         "eslint-plugin-jsx-a11y": "^6.4.1",
         "eslint-plugin-react-hooks": "^4.2.0",
-        "typescript": "^4.0.5",
         "jest": "^26.6.3",
-        "ts-jest": "^26.4.3"
+        "ts-jest": "^26.4.3",
+        "typescript": "^4.0.5"
     }
 }
