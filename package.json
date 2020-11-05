@@ -20,9 +20,9 @@
     },
     "scripts": {
         "cleanup": "./cleanup.sh",
-        "test:all": "jest",
-        "test": "lerna run --scope=@dateam/ark test",
-        "build:all": "lerna run --scope=@dateam/ark* build --include-filtered-dependencies"
+        "test": "lerna run test",
+        "build": "lerna run --scope=@dateam/ark* build --include-filtered-dependencies",
+        "version": "lerna version"
     },
     "devDependencies": {
         "lerna": "^3.22.1",
