@@ -1,5 +1,5 @@
 {
-    "name": "@dateam/ark",
+    "name": "@dateam/ark-ngx",
     "version": "0.0.8",
     "description": "",
     "main": "dist/toolkit.js",

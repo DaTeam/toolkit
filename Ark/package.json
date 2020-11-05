@@ -1,0 +1,33 @@
+{
+    "name": "@dateam/ark",
+    "version": "0.0.8",
+    "description": "Ark",
+    "author": "DaTeam S.A.S. (France)",
+    "license": "ISC",
+    "private": true,
+    "workspaces": [
+        "packages/*"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/DaTeam/toolkit.git"
+    },
+    "keywords": [
+        "dateam",
+        "toolkit",
+        "utils"
+    ],
+    "bugs": {
+        "url": "https://github.com/DaTeam/toolkit/issues"
+    },
+    "homepage": "https://github.com/DaTeam/toolkit#readme",
+    "scripts": {
+        "cleanup": "./cleanup.sh",
+        "build:doppelmutzi": "lerna run --scope=@doppelmutzi/* build",
+        "build:dependent": "lerna run --scope=@doppelmutzi/awesome-app build --include-filtered-dependencies",
+        "build:all": "lerna exec yarn build"
+    },
+    "devDependencies": {
+        "lerna": "^3.22.1"
+    }
+}
