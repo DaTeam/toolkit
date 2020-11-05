@@ -1,8 +1,0 @@
-node_modules
-android
-ios
-.vscode
-.jest
-**/*.snap
-**/*.png
-**/*.spec.ts

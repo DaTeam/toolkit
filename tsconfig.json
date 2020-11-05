@@ -3,11 +3,6 @@
         "node_modules",
         "**/*.spec.ts"
     ],
-    "include": [
-        "src/**/*.ts",
-        "src/**/*.js",
-        "src/**/*.d.ts"
-    ],
     "compilerOptions": {
         "target": "es5", /* Think about it, esnext fails jest since optional chaining and Nullish Coalescing left as is */
         "lib": [
