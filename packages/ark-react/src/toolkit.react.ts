@@ -30,6 +30,8 @@ import {
     take
 } from '@dateam/ark';
 
+export type CallbackAnyArg = (...args: any[]) => unknown;
+
 /*
  ** Children Helpers
  */
@@ -38,7 +40,7 @@ export const matchChildren = (
     prevChildren: ReactNode | undefined,
     nextChildren: ReactNode | undefined,
     unicityFn?: (element: ReactElement) => any
-) => {
+): boolean => {
     const previousMarkers = prevChildren ? childrenToReactElement(prevChildren) : [];
     const nextMarkers = nextChildren ? childrenToReactElement(nextChildren) : [];
     const prevMarkersKey = previousMarkers.map(child => child.key);
@@ -64,6 +66,7 @@ export const childrenToReactElement = (children: ReactNode | undefined): ReactEl
  */
 
 type StateValue<S extends any> = S | (() => S);
+type StateReturn<S extends any> = [S, React.Dispatch<React.SetStateAction<S>>];
 
 export const useSafeState = <S extends any>(
     initialState: StateValue<S>
@@ -87,6 +90,13 @@ export const useSafeState = <S extends any>(
     return [state, setter];
 };
 
+type UseAsyncResult<T> = {
+    execute: (...args: unknown[]) => Promise<T | null>;
+    pending: boolean;
+    value: T | null;
+    error: unknown | null;
+};
+
 /*
  ** Async call which can be triggered immediately or called later
  ** > async function
@@ -98,16 +108,16 @@ export const useSafeState = <S extends any>(
  **     - value, the result of the call, default value is null
  **     - error, the error if the call has failed, default value is null
  */
-export const useAsync = (
-    asyncFunction: (...args: any[]) => Promise<any>,
+export const useAsync = <T>(
+    asyncFunction: (...args: any[]) => Promise<T>,
     dependencies = [],
     immediate: boolean = true
-) => {
+): UseAsyncResult<T> => {
     const [pending, setPending] = useSafeState(false);
-    const [value, setValue] = useSafeState(null);
-    const [error, setError] = useSafeState(null);
+    const [value, setValue] = useSafeState<T | null>(null);
+    const [error, setError] = useSafeState<unknown | null>(null);
 
-    const execute = useCallback(async (...args) => {
+    const execute = useCallback(async (...args: unknown[]) => {
         setPending(true);
         setValue(null);
         setError(null);
@@ -141,7 +151,7 @@ export const useAsync = (
  ** > key name to distinguish which instance is logging
  ** > object containing the properties to monitor
  */
-export const useWhyDidYouUpdate = (name: string, props: Record<any, any>) => {
+export const useWhyDidYouUpdate = (name: string, props: Record<any, any>): void => {
     // Get a mutable ref object where we can store props
     // for comparison next time this hook runs.
     const previousProps = useRef<any>();
@@ -212,15 +222,18 @@ export const useAnimationClass = (options?: typeof DEFAULT_OPTIONS): any => {
         const opt = { ...DEFAULT_OPTIONS };
 
         if (isObjectLike(options)) {
-            if (isString(options!.onEnterClass)) opt.onEnterClass = options!.onEnterClass;
-            if (isString(options!.onTriggerClass)) opt.onTriggerClass = options!.onTriggerClass;
+            const onEnterClass = options?.onEnterClass;
+            const onTriggerClass = options?.onTriggerClass;
+
+            if (isString(onEnterClass)) opt.onEnterClass = onEnterClass;
+            if (isString(onTriggerClass)) opt.onTriggerClass = onTriggerClass;
         }
 
         return opt;
     }, [options]);
 
     const ref = useRef<any>(null);
-    const trigger = useCallback((cb = () => { }) => {
+    const trigger = useCallback((cb = () => void {}) => {
         const element = ref.current;
 
         if (isObjectLike(element)) {
@@ -278,6 +291,8 @@ export const useAnimationClass = (options?: typeof DEFAULT_OPTIONS): any => {
     return [ref, trigger];
 };
 
+type GlobalStateHook<S extends any> = (value?: S | (() => S), deps?: React.DependencyList) => StateReturn<S>;
+
 /*
  ** Global state hook constructor
  ** > [Optional] initial value for the state
@@ -288,7 +303,7 @@ export const useAnimationClass = (options?: typeof DEFAULT_OPTIONS): any => {
  ** > dependencies to update the memoized value
  ** => Returns an array that can be destructured : [value, setState] (such as useState API)
  */
-export const createGlobalStateHook = <S extends any>(initValue: StateValue<S>) => {
+export const createGlobalStateHook = <S extends any>(initValue: StateValue<S>): GlobalStateHook<S> => {
     const observer = new Observer();
     let lastKnownState = initValue;
 
@@ -297,7 +312,7 @@ export const createGlobalStateHook = <S extends any>(initValue: StateValue<S>) =
         observer.notify(newState);
     };
 
-    return (value?: S, deps: React.DependencyList = []): [S, React.Dispatch<React.SetStateAction<S>>] => {
+    return (value?: S | (() => S), deps: React.DependencyList = []): StateReturn<S> => {
         const [state, setState] = useState(lastKnownState);
         const memoizedValue = useMemo(() => value, deps); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -388,7 +403,7 @@ export const useORLogic = (...conditions: (boolean | AnyFunctionReturning<boolea
  **     - hasError is a boolean set to true if any parameter is *defined* (every value but null/undefined)
  **     - errors is an array containing each error
  */
-export const useError = (...errors: any[]) => {
+export const useError = (...errors: any[]): [boolean, any[]] => {
     if (!isArray(errors)) throw new TypeError('errors are not valid');
 
     return useMemo(
@@ -400,7 +415,7 @@ export const useError = (...errors: any[]) => {
     );
 };
 
-export const useFirstEffect = (effect: React.EffectCallback, dependencies: any[] = []) => {
+export const useFirstEffect = (effect: React.EffectCallback, dependencies: unknown[] = []): void => {
     const occurred = useRef(false);
 
     useEffect(() => {
@@ -411,7 +426,7 @@ export const useFirstEffect = (effect: React.EffectCallback, dependencies: any[]
     }, dependencies); // eslint-disable-line react-hooks/exhaustive-deps
 };
 
-export const useFirstDefined = (effect: React.EffectCallback, value: any) => {
+export const useFirstDefined = (effect: React.EffectCallback, value: unknown): void => {
     const occurred = useRef(false);
 
     useEffect(() => {
@@ -423,12 +438,12 @@ export const useFirstDefined = (effect: React.EffectCallback, value: any) => {
 };
 
 export const useManInTheMiddle = (
-    overrideCallback: (originalCallback: Function, ...args: any[]) => unknown,
+    overrideCallback: (originalCallback: CallbackAnyArg, ...args: any[]) => unknown,
     children: React.ReactNode,
     dependencies: any[],
     methodsName: string[] = ['onChange']
-) => useMemo(() => childrenToReactElement(children).map(child => {
-    const overridenMethods: Record<string, Function> = {};
+): ReactElement[] => useMemo(() => childrenToReactElement(children).map(child => {
+    const overridenMethods: Record<string, CallbackAnyArg> = {};
 
     methodsName.forEach(method => {
         const { [method]: originMethod } = child.props;
@@ -439,23 +454,23 @@ export const useManInTheMiddle = (
     return cloneElement(child, { ...overridenMethods });
 }), dependencies); // eslint-disable-line react-hooks/exhaustive-deps
 
-export const useDebounce = (handler: Function, timeout: number = 0, interval: boolean = false) => {
+export const useDebounce = (
+    handler: CallbackAnyArg,
+    timeout: number = 0,
+    interval: boolean = false
+): CallbackAnyArg => {
     const debounce = useMemo(() => {
         if (interval === true) {
-            return new DebounceInterval((...args) => handler(...args), timeout);
+            return new DebounceInterval((...args) => void handler(...args), timeout);
         }
 
-        return new Debounce((...args) => {
-            handler(...args);
-        }, timeout);
+        return new Debounce((...args: any[]) => void handler(...args), timeout);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    return useCallback((...args) => {
-        debounce.push(...args);
-    }, [debounce]);
+    return useCallback((...args: any[]) => void debounce.push(...args), [debounce]);
 };
 
-export const useDebounceValue = <T>(input: T, timeout: number = 0, interval: boolean = false) => {
+export const useDebounceValue = <T>(input: T, timeout: number = 0, interval: boolean = false): T => {
     const [debouncedValue, setDebouncedValue] = useState(input);
     const debounce = useMemo(() => {
         if (interval === true) {
@@ -475,7 +490,7 @@ export const useDebounceValue = <T>(input: T, timeout: number = 0, interval: boo
 export const usePick = <T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> =>
     useMemo(() => objectPick(obj, keys), [obj]); // eslint-disable-line react-hooks/exhaustive-deps
 
-export const useLogRenders = (key: string, interval?: number) => {
+export const useLogRenders = (key: string, interval?: number): void => {
     const counter = useRef(0);
     const sinceLastLogCounter = useRef(0);
     const logFormat = useMemo(() => {
@@ -542,7 +557,7 @@ const trimForwardHistory = <T>(history: T[], currentIndex: number) => {
     return take(history, currentIndex + 1);
 };
 
-export const createHistoryHook = <T>(matchPredicate: (item: T, compareWith: T) => boolean) => {
+export const createHistoryHook = <T>(matchPredicate: (item: T, compareWith: T) => boolean): () => History<T> => {
     const useHistoryState = createGlobalStateHook<HistoryState<T>>({
         history: [],
         pending: null,

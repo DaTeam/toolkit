@@ -1,6 +1,6 @@
 {
     "name": "@dateam/ark-react",
-    "version": "0.1.0",
+    "version": "0.1.3",
     "description": "Ark React",
     "author": "DaTeam S.A.S. (France)",
     "license": "ISC",
@@ -32,19 +32,19 @@
         "react": "^17.0.1"
     },
     "devDependencies": {
-        "@dateam/ark": "^0.1.0",
+        "@dateam/ark": "^0.0.8",
         "@types/jest": "^26.0.15",
-        "@types/react": "^16.9.55",
-        "@typescript-eslint/parser": "^4.6.1",
-        "eslint": "^7.12.1",
-        "eslint-config-airbnb": "^18.2.0",
+        "@types/react": "^17.0.0",
+        "@typescript-eslint/parser": "^4.9.0",
+        "eslint": "^7.14.0",
+        "eslint-config-airbnb": "^18.2.1",
         "eslint-plugin-import": "^2.22.1",
         "eslint-plugin-json": "^2.1.2",
         "eslint-plugin-jsx-a11y": "^6.4.1",
         "eslint-plugin-react-hooks": "^4.2.0",
         "jest": "^26.6.3",
         "react": "^17.0.1",
-        "ts-jest": "^26.4.3",
-        "typescript": "^4.0.5"
+        "ts-jest": "^26.4.4",
+        "typescript": "^4.1.2"
     }
 }

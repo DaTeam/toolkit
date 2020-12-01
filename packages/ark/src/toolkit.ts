@@ -13,6 +13,8 @@ export enum Type {
     Valid = 1 << 9,
     Undefined = 1 << 10
 }
+export type Nullable<T> = T | null;
+export type Maybe<T> = T | null | undefined;
 export type AnyFunctionReturning<T> = (...args: any[]) => T;
 
 const fnObjectToString = Object.prototype.toString;
@@ -768,7 +770,12 @@ export const getClassMethodName = (instance: any, method: Function): string | nu
     return result;
 };
 
-export const conditionalConcat = (...args: (string | Record<string, boolean>)[]): string | undefined => {
+export type ConditionalParams = Maybe<
+    | string
+    | { [key: string]: boolean }
+>;
+
+export const conditionalConcat = (...args: ConditionalParams[]): string | undefined => {
     if (!isArray(args)) return undef;
 
     const finalClassName: string[] = [];
