@@ -44,6 +44,8 @@
         "import/prefer-default-export": "off",
         "camelcase": "off",
         "no-redeclare": "off",
+        "no-new-object": "off",
+        "prefer-arrow-callback": "off",
         "no-unused-vars": [
             "off",
             {
@@ -245,7 +247,6 @@
         "prefer-rest-params": "error",
         "prefer-template": "error",
         "prefer-spread": "error",
-        "prefer-arrow-callback": "error",
         "object-curly-spacing": [
             "error",
             "always"
@@ -265,7 +266,6 @@
         "no-var": "warn",
         "no-nested-ternary": "error",
         "no-multi-assign": "error",
-        "no-new-object": "error",
         "no-new-func": "error",
         "no-array-constructor": "error",
         "no-useless-constructor": "error",

@@ -1,3 +1,3 @@
-declare module "@dateam/ark" {
+declare module '@dateam/ark' {
 
 }

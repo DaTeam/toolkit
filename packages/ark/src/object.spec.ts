@@ -24,5 +24,4 @@ describe('object functions', () => {
             expect(internalOptions).toEqual(internalOptionsBackup);
         });
     });
-
 });

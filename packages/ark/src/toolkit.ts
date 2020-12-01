@@ -1213,7 +1213,7 @@ export class TimeoutPromise<T> {
     private _isTerminated = false;
 
     protected timeoutId!: any;
-    protected resolve!: (value?: T | PromiseLike<T> | undefined) => void;
+    protected resolve!: (value: T | PromiseLike<T>) => void;
     protected reject!: (reason?: any) => void;
     protected safeCancel: boolean;
 
