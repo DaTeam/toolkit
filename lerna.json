@@ -9,10 +9,6 @@
         "publish": {
             "conventionalCommits": true,
             "yes": true
-        },
-        "version": {
-            "amend": true,
-            "forcePublish": true
         }
     }
 }

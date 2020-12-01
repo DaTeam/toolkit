@@ -22,7 +22,8 @@
         "cleanup": "./cleanup.sh",
         "test": "lerna run test",
         "build": "lerna run --scope=@dateam/ark* build --include-filtered-dependencies",
-        "version": "lerna version"
+        "version": "lerna version",
+        "publish": "lerna publish"
     },
     "devDependencies": {
         "jest": "^26.6.3",
