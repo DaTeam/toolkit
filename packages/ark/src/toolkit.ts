@@ -17,6 +17,8 @@ export type Nullable<T> = T | null;
 export type Maybe<T> = T | null | undefined;
 export type AnyFunctionReturning<T> = (...args: any[]) => T;
 
+type NativeRegExp = globalThis.RegExp;
+
 const fnObjectToString = Object.prototype.toString;
 const ArrayProto = Array.prototype;
 const stringTag = '[object String]';
@@ -26,8 +28,6 @@ const arrayTag = '[object Array]';
 const boolTag = '[object Boolean]';
 
 let undef: undefined;
-
-type NativeRegExp = globalThis.RegExp;
 
 export const requireExtendedPrototypes = (): void => { };
 
