@@ -1,9 +1,22 @@
 {
     "name": "@dateam/ark-react",
-    "version": "0.1.5",
     "description": "Ark React",
+    "version": "0.1.8",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "rimraf ./dist && yarn build:lib && yarn build:types && yarn build:copy-files",
+        "build:lib": "node ../../../scripts/build",
+        "build:types": "tsc -p ./tsconfig.types.json",
+        "build:copy-files": "node ../../../scripts/copy-files.js",
+        "lintfix": "eslint src/**/* --fix --ext .ts,.tsx,.js --format codeframe --no-error-on-unmatched-pattern",
+        "lint": "eslint src/**/* --ext .ts,.tsx,.js --format codeframe --no-error-on-unmatched-pattern",
+        "compile": "tsc --noEmit && yarn run lint",
+        "prepublish": "npm run build"
+    },
     "author": "DaTeam S.A.S. (France)",
-    "license": "ISC",
+    "license": "MIT",
     "keywords": [
         "toolkit",
         "utils",
@@ -17,34 +30,40 @@
     "bugs": {
         "url": "https://github.com/DaTeam/toolkit/issues"
     },
-    "main": "dist/toolkit.js",
-    "types": "dist/toolkit.d.ts",
-    "scripts": {
-        "compile": "tsc --noEmit && npm run lint",
-        "lint": "eslint src/*.ts --ext .ts --format codeframe",
-        "build": "tsc",
-        "validate": "npm run compile && npm run test",
-        "test": "jest --passWithNoTests",
-        "test-cov": "jest --coverage",
-        "prepublish": "npm run build"
-    },
-    "peerDependencies": {
-        "react": "^17.0.1"
-    },
     "devDependencies": {
+        "@babel/cli": "7.12.8",
+        "@babel/core": "^7.12.9",
         "@dateam/ark": "^0.0.8",
-        "@types/jest": "^26.0.15",
+        "@types/node": "^14.14.10",
+        "@types/prop-types": "^15.7.3",
         "@types/react": "^17.0.0",
+        "@types/react-dom": "^17.0.0",
+        "@types/react-router-dom": "^5.1.6",
         "@typescript-eslint/parser": "^4.9.0",
         "eslint": "^7.14.0",
         "eslint-config-airbnb": "^18.2.1",
         "eslint-plugin-import": "^2.22.1",
         "eslint-plugin-json": "^2.1.2",
         "eslint-plugin-jsx-a11y": "^6.4.1",
+        "eslint-plugin-react": "^7.21.5",
         "eslint-plugin-react-hooks": "^4.2.0",
-        "jest": "^26.6.3",
+        "prop-types": "^15.7.2",
         "react": "^17.0.1",
-        "ts-jest": "^26.4.4",
+        "react-dom": "^17.0.1",
+        "react-router": "5.2.0",
+        "react-router-dom": "5.2.0",
+        "rimraf": "3.0.2",
         "typescript": "^4.1.2"
+    },
+    "peerDependencies": {
+        "@dateam/ark": "^0.1.8",
+        "prop-types": "^15.7.2",
+        "react": "^17.0.1",
+        "react-dom": "^17.0.1",
+        "react-router": "5.2.0",
+        "react-router-dom": "5.2.0"
+    },
+    "dependencies": {
+        "@babel/runtime": "^7.12.5"
     }
 }
