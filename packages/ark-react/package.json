@@ -1,15 +1,15 @@
 {
     "name": "@dateam/ark-react",
     "description": "Ark React",
-    "version": "0.1.8",
+    "version": "0.1.11",
     "module": "dist/index.js",
     "types": "dist/index.d.ts",
     "main": "dist/index.js",
     "scripts": {
         "build": "rimraf ./dist && yarn build:lib && yarn build:types && yarn build:copy-files",
-        "build:lib": "node ../../../scripts/build",
+        "build:lib": "node ../../scripts/build",
         "build:types": "tsc -p ./tsconfig.types.json",
-        "build:copy-files": "node ../../../scripts/copy-files.js",
+        "build:copy-files": "node ../../scripts/copy-files.js",
         "lintfix": "eslint src/**/* --fix --ext .ts,.tsx,.js --format codeframe --no-error-on-unmatched-pattern",
         "lint": "eslint src/**/* --ext .ts,.tsx,.js --format codeframe --no-error-on-unmatched-pattern",
         "compile": "tsc --noEmit && yarn run lint",
@@ -35,10 +35,8 @@
         "@babel/core": "^7.12.9",
         "@dateam/ark": "^0.0.8",
         "@types/node": "^14.14.10",
-        "@types/prop-types": "^15.7.3",
         "@types/react": "^17.0.0",
         "@types/react-dom": "^17.0.0",
-        "@types/react-router-dom": "^5.1.6",
         "@typescript-eslint/parser": "^4.9.0",
         "eslint": "^7.14.0",
         "eslint-config-airbnb": "^18.2.1",
@@ -50,18 +48,13 @@
         "prop-types": "^15.7.2",
         "react": "^17.0.1",
         "react-dom": "^17.0.1",
-        "react-router": "5.2.0",
-        "react-router-dom": "5.2.0",
         "rimraf": "3.0.2",
         "typescript": "^4.1.2"
     },
     "peerDependencies": {
         "@dateam/ark": "^0.1.8",
-        "prop-types": "^15.7.2",
         "react": "^17.0.1",
-        "react-dom": "^17.0.1",
-        "react-router": "5.2.0",
-        "react-router-dom": "5.2.0"
+        "react-dom": "^17.0.1"
     },
     "dependencies": {
         "@babel/runtime": "^7.12.5"

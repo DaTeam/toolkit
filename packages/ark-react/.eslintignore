@@ -1,0 +1,17 @@
+node_modules
+android
+ios
+src/theme
+.vscode
+.jest
+**/*.snap
+*.d.ts
+*.png
+*.jpg
+*.ttf
+*.svg
+*.scss
+
+src/serviceWorker.js
+
+**/* copy*
