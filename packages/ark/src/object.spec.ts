@@ -1,6 +1,6 @@
 import {
     objectDefinedPropsOnly
-} from './toolkit';
+} from './index';
 
 describe('object functions', () => {
     describe('objectEnumerablePropsOnly', () => {

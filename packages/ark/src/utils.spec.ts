@@ -1,4 +1,4 @@
-import { computeOptions } from './toolkit';
+import { computeOptions } from './index';
 
 describe('utils', () => {
     describe('internalOptions', () => {

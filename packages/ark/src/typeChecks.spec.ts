@@ -5,7 +5,7 @@ import {
     isString,
     isFunction,
     isBoolean
-} from './toolkit';
+} from './index';
 
 describe('type checks', () => {
     describe('isDefined', () => {
