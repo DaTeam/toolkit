@@ -10,8 +10,8 @@
         "build:lib": "node ../../scripts/build",
         "build:types": "tsc -p ./tsconfig.types.json",
         "build:copy-files": "node ../../scripts/copy-files.js",
-        "lintfix": "eslint src/**/* --fix --ext .ts,.tsx,.js --format codeframe --no-error-on-unmatched-pattern",
-        "lint": "eslint src/**/* --ext .ts,.tsx,.js --format codeframe --no-error-on-unmatched-pattern",
+        "lintfix": "eslint \"src/**/*\"--fix --ext .ts,.tsx,.js --format codeframe --no-error-on-unmatched-pattern",
+        "lint": "eslint \"src/**/*\"--ext .ts,.tsx,.js --format codeframe --no-error-on-unmatched-pattern",
         "compile": "tsc --noEmit && yarn run lint",
         "prepublish": "npm run build"
     },

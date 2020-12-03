@@ -1,12 +1,28 @@
 {
     "name": "@dateam/ark",
-    "version": "0.1.11",
     "description": "Ark",
+    "version": "0.1.13",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "rimraf ./dist && yarn build:lib && yarn build:types && yarn build:copy-files",
+        "build:lib": "node ../../scripts/build",
+        "build:types": "tsc -p ./tsconfig.types.json",
+        "build:copy-files": "node ../../scripts/copy-files.js",
+        "lintfix": "eslint \"src/**/*\"--fix --ext .ts,.tsx,.js --format codeframe --no-error-on-unmatched-pattern",
+        "lint": "eslint \"src/**/*\"--ext .ts,.tsx,.js --format codeframe --no-error-on-unmatched-pattern",
+        "compile": "tsc --noEmit && yarn run lint",
+        "test": "jest --passWithNoTests",
+        "test-cov": "jest --coverage",
+        "prepublish": "npm run build"
+    },
     "author": "DaTeam S.A.S. (France)",
-    "license": "ISC",
+    "license": "MIT",
     "keywords": [
         "toolkit",
-        "utils"
+        "utils",
+        "react"
     ],
     "repository": {
         "type": "git",
@@ -16,18 +32,11 @@
     "bugs": {
         "url": "https://github.com/DaTeam/toolkit/issues"
     },
-    "main": "dist/toolkit.js",
-    "types": "dist/toolkit.d.ts",
-    "scripts": {
-        "style": "eslint src/*.ts --ext .ts --format codeframe",
-        "compile": "tsc --noEmit && npm run style",
-        "test": "jest --passWithNoTests",
-        "test-cov": "jest --coverage",
-        "build": "tsc",
-        "prepublish": "npm run build"
-    },
     "devDependencies": {
+        "@babel/cli": "7.12.8",
+        "@babel/core": "^7.12.9",
         "@types/jest": "^26.0.15",
+        "@types/node": "^14.14.10",
         "@typescript-eslint/parser": "^4.9.0",
         "eslint": "^7.14.0",
         "eslint-config-airbnb": "^18.2.1",
@@ -37,7 +46,11 @@
         "eslint-plugin-react": "^7.21.5",
         "eslint-plugin-react-hooks": "^4.2.0",
         "jest": "^26.6.3",
+        "rimraf": "3.0.2",
         "ts-jest": "^26.4.4",
         "typescript": "^4.1.2"
+    },
+    "dependencies": {
+        "@babel/runtime": "^7.12.5"
     }
 }

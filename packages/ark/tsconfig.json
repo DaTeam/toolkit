@@ -1,13 +1,27 @@
 {
     "extends": "../../tsconfig.json",
+    "exclude": [
+        "node_modules",
+        "**/*.spec.ts"
+    ],
     "include": [
-        "src/**/*.ts",
-        "src/**/*.js",
-        "src/**/*.d.ts"
+        "src/**/*"
     ],
     "compilerOptions": {
         "rootDir": "src",
         "outDir": "dist",
-        "baseUrl": "./"
+        "baseUrl": "./",
+        "target": "es5",
+        "module": "esnext",
+        "sourceMap": true,
+        "lib": [
+            "dom",
+            "esnext"
+        ],
+        "typeRoots": [
+            "src/typings"
+        ],
+        "declaration": false
     },
+    "compileOnSave": true
 }
