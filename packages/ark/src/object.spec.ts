@@ -1,6 +1,6 @@
 import {
     objectDefinedPropsOnly
-} from './toolkit';
+} from './index';
 
 describe('object functions', () => {
     describe('objectEnumerablePropsOnly', () => {
@@ -24,5 +24,4 @@ describe('object functions', () => {
             expect(internalOptions).toEqual(internalOptionsBackup);
         });
     });
-
 });

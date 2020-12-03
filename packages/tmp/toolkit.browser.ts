@@ -1,4 +1,4 @@
-import { RegExp } from './toolkit';
+import { RegExp } from './index';
 
 export const isLocalhost = Boolean(
     window.location.hostname === 'localhost' ||

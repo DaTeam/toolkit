@@ -25,7 +25,6 @@ buck-out/
 # Build
 #
 dist/
-*.tsbuildinfo
 
 # dependencies
 /node_modules
@@ -34,6 +33,11 @@ dist/
 
 # testing
 /coverage
+
+# production
+/build
+/lib
+/types
 
 # misc
 .env.local
@@ -44,11 +48,3 @@ dist/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# yarn
-.yarn/*
-!.yarn/releases
-!.yarn/plugins
-!.yarn/sdks
-!.yarn/versions
-.pnp.*

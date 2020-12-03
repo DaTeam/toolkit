@@ -1,46 +1,62 @@
 {
-    "name": "@dateam/ark",
-    "version": "0.0.8",
-    "description": "",
-    "main": "dist/toolkit.js",
-    "types": "dist/toolkit.d.ts",
-    "scripts": {
-        "compile": "tsc --noEmit && npm run lint",
-        "lint": "eslint src/*.ts --ext .ts --format codeframe",
-        "build": "tsc",
-        "validate": "npm run compile && npm run test",
-        "test": "jest",
-        "test-cov": "jest --coverage",
-        "prepublish": "npm run build"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/DaTeam/toolkit.git"
-    },
+    "name": "@dateam/ark-root",
+    "version": "0.1.7",
+    "description": "Ark",
+    "author": "dateam S.A.S. (France)",
+    "license": "MIT",
+    "private": true,
+    "workspaces": [
+        "packages/*"
+    ],
+    "repository": "dateam/toolkit",
     "keywords": [
+        "dateam",
         "toolkit",
         "utils"
     ],
-    "author": "DaTeam S.A.S. (France)",
-    "license": "ISC",
+    "homepage": "https://github.com/dateam/toolkit#readme",
     "bugs": {
-        "url": "https://github.com/DaTeam/toolkit/issues"
+        "url": "https://github.com/dateam/toolkit/issues"
     },
-    "homepage": "https://github.com/DaTeam/toolkit#readme",
+    "scripts": {
+        "cleanup": "./cleanup.sh",
+        "test": "lerna run test",
+        "build": "lerna run --scope=@dateam/ark* build --include-filtered-dependencies",
+        "version": "lerna version",
+        "publish": "lerna publish"
+    },
     "devDependencies": {
-        "@angular/core": "^10.1.5",
-        "@types/jest": "^26.0.14",
-        "@types/react": "^16.9.51",
-        "@typescript-eslint/parser": "^4.4.0",
-        "eslint": "^7.10.0",
-        "eslint-config-airbnb": "^18.2.0",
+        "@babel/core": "^7.12.9",
+        "@babel/plugin-proposal-class-properties": "7.12.1",
+        "@babel/plugin-proposal-object-rest-spread": "7.12.1",
+        "@babel/plugin-proposal-private-methods": "7.12.1",
+        "@babel/plugin-transform-react-constant-elements": "7.12.1",
+        "@babel/plugin-transform-runtime": "7.12.1",
+        "@babel/preset-env": "7.12.7",
+        "@babel/preset-react": "7.12.7",
+        "@babel/preset-typescript": "7.12.7",
+        "@octokit/core": ">=3",
+        "@typescript-eslint/eslint-plugin": "^4.8.2",
+        "@typescript-eslint/parser": "^4.8.2",
+        "babel-plugin-macros": "^3.0.0",
+        "babel-plugin-optimize-clsx": "^2.6.1",
+        "babel-plugin-react-remove-properties": "^0.3.0",
+        "babel-plugin-transform-react-remove-prop-types": "^0.4.24",
+        "eslint": "^7.14.0",
+        "eslint-config-airbnb": "^18.2.1",
         "eslint-plugin-import": "^2.22.1",
         "eslint-plugin-json": "^2.1.2",
-        "eslint-plugin-jsx-a11y": "^6.3.1",
-        "eslint-plugin-react-hooks": "^4.1.2",
-        "jest": "^26.5.2",
-        "react": "^16.13.1",
-        "ts-jest": "^26.4.1",
-        "typescript": "^4.0.3"
+        "eslint-plugin-jsx-a11y": "^6.4.1",
+        "eslint-plugin-react": "^7.21.5",
+        "eslint-plugin-react-hooks": "^4.2.0",
+        "fast-glob": "^3.2.4",
+        "fs-extra": "^9.0.1",
+        "jest": "^26.6.3",
+        "lerna": "^3.22.1",
+        "rimraf": "3.0.2",
+        "ts-jest": "^26.4.3",
+        "typescript": "^4.1.2",
+        "webpack": "^5.6.0",
+        "yargs": "^16.1.1"
     }
 }

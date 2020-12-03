@@ -1,0 +1,50 @@
+{
+    "name": "@dateam/ark-ngx",
+    "version": "0.1.5",
+    "description": "Ark Ngx",
+    "author": "DaTeam S.A.S. (France)",
+    "license": "ISC",
+    "keywords": [
+        "toolkit",
+        "utils",
+        "angular",
+        "ngx"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/DaTeam/toolkit.git"
+    },
+    "homepage": "https://github.com/DaTeam/toolkit#readme",
+    "bugs": {
+        "url": "https://github.com/DaTeam/toolkit/issues"
+    },
+    "main": "dist/toolkit.js",
+    "types": "dist/toolkit.d.ts",
+    "scripts": {
+        "compile": "tsc --noEmit && npm run lint",
+        "lint": "eslint src/*.ts --ext .ts --format codeframe",
+        "build": "tsc",
+        "validate": "npm run compile && npm run test",
+        "test": "jest --passWithNoTests",
+        "test-cov": "jest --coverage",
+        "prepublish": "npm run build"
+    },
+    "peerDependencies": {
+        "@angular/core": "^10.2.2"
+    },
+    "devDependencies": {
+        "@angular/core": "^11.0.2",
+        "@dateam/ark": "^0.0.8",
+        "@types/jest": "^26.0.15",
+        "@typescript-eslint/parser": "^4.9.0",
+        "eslint": "^7.14.0",
+        "eslint-config-airbnb": "^18.2.1",
+        "eslint-plugin-import": "^2.22.1",
+        "eslint-plugin-json": "^2.1.2",
+        "eslint-plugin-jsx-a11y": "^6.4.1",
+        "eslint-plugin-react-hooks": "^4.2.0",
+        "jest": "^26.6.3",
+        "ts-jest": "^26.4.4",
+        "typescript": "^4.1.2"
+    }
+}

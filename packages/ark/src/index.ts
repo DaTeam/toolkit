@@ -13,7 +13,11 @@ export enum Type {
     Valid = 1 << 9,
     Undefined = 1 << 10
 }
+export type Nullable<T> = T | null;
+export type Maybe<T> = T | null | undefined;
 export type AnyFunctionReturning<T> = (...args: any[]) => T;
+
+type NativeRegExp = globalThis.RegExp;
 
 const fnObjectToString = Object.prototype.toString;
 const ArrayProto = Array.prototype;
@@ -24,8 +28,6 @@ const arrayTag = '[object Array]';
 const boolTag = '[object Boolean]';
 
 let undef: undefined;
-
-type NativeRegExp = globalThis.RegExp;
 
 export const requireExtendedPrototypes = (): void => { };
 
@@ -480,6 +482,12 @@ export const filterDefined = <T>(array: T[]): T[] => {
     return array.filter(isDefined);
 };
 
+export const unique = <T>(array: T[]): T[] => {
+    if (!isArray(array) || !array.length) return [];
+
+    return array.filter((item, idx, src) => src.indexOf(item) === idx);
+};
+
 /**
  ** String
  */
@@ -768,7 +776,12 @@ export const getClassMethodName = (instance: any, method: Function): string | nu
     return result;
 };
 
-export const conditionalConcat = (...args: (string | Record<string, boolean>)[]): string | undefined => {
+export type ConditionalParams = Maybe<
+    | string
+    | { [key: string]: boolean }
+>;
+
+export const conditionalConcat = (...args: ConditionalParams[]): string | undefined => {
     if (!isArray(args)) return undef;
 
     const finalClassName: string[] = [];
@@ -1206,7 +1219,7 @@ export class TimeoutPromise<T> {
     private _isTerminated = false;
 
     protected timeoutId!: any;
-    protected resolve!: (value?: T | PromiseLike<T> | undefined) => void;
+    protected resolve!: (value: T | PromiseLike<T>) => void;
     protected reject!: (reason?: any) => void;
     protected safeCancel: boolean;
 
@@ -1329,7 +1342,7 @@ export class Observer<T extends any = any, CallbackType extends Function = Obser
     }
 }
 
-type TimedNotifierCallback<T> = (
+export type TimedNotifierCallback<T> = (
     data: T,
     resolve?: (value?: unknown) => void,
     reject?: (reason?: any) => void
