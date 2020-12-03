@@ -3,7 +3,7 @@ import {
     clearCollection,
     removeAt,
     take
-} from './toolkit';
+} from './index';
 
 describe('array functions', () => {
     describe('addRange', () => {

@@ -482,6 +482,12 @@ export const filterDefined = <T>(array: T[]): T[] => {
     return array.filter(isDefined);
 };
 
+export const unique = <T>(array: T[]): T[] => {
+    if (!isArray(array) || !array.length) return [];
+
+    return array.filter((item, idx, src) => src.indexOf(item) === idx);
+};
+
 /**
  ** String
  */
@@ -1336,7 +1342,7 @@ export class Observer<T extends any = any, CallbackType extends Function = Obser
     }
 }
 
-type TimedNotifierCallback<T> = (
+export type TimedNotifierCallback<T> = (
     data: T,
     resolve?: (value?: unknown) => void,
     reject?: (reason?: any) => void

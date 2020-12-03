@@ -1,7 +1,7 @@
 import {
     formatDate as initialFormatDate,
     formatHour as initialFormatHour
-} from './toolkit';
+} from './index';
 
 export const formatDate = (
     date: Date,
