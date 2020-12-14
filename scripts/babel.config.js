@@ -24,14 +24,14 @@ module.exports = function getBabelConfig(api) {
         ['@babel/plugin-proposal-class-properties', { loose: true }],
         ['@babel/plugin-proposal-private-methods', { loose: true }],
         ['@babel/plugin-proposal-object-rest-spread', { loose: true }],
-        // [
-        //     '@babel/plugin-transform-runtime',
-        //     {
-        //         useESModules: true,
-        //         // any package needs to declare 7.12.1 as a runtime dependency. default is ^7.12.1
-        //         version: '^7.12.1',
-        //     },
-        // ],
+        [
+            '@babel/plugin-transform-runtime',
+            {
+                useESModules: true,
+                // any package needs to declare 7.12.1 as a runtime dependency. default is ^7.12.1
+                version: '^7.12.1',
+            },
+        ],
         '@babel/plugin-transform-react-constant-elements',
         ['babel-plugin-react-remove-properties', { properties: ['data-mui-test'] }],
         [

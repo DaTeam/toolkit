@@ -1,23 +1,10 @@
-import {
-    Children,
-    isValidElement,
-    ReactNode,
-    ReactElement,
-    useState,
-    useEffect,
-    useCallback,
-    useRef,
-    useMemo,
-    cloneElement
-} from 'react';
+import React from 'react';
 import {
     compareCollection,
     toJSON,
     isObjectLike,
     isString,
     isFunction,
-    Observer,
-    isUndefined,
     isArray,
     noop,
     isDefined,
@@ -29,6 +16,7 @@ import {
     isValidNumber,
     take
 } from '@dateam/ark';
+import { StateValue } from './state';
 
 export type CallbackAnyArg = (...args: any[]) => unknown;
 
@@ -37,9 +25,9 @@ export type CallbackAnyArg = (...args: any[]) => unknown;
  */
 
 export const matchChildren = (
-    prevChildren: ReactNode | undefined,
-    nextChildren: ReactNode | undefined,
-    unicityFn?: (element: ReactElement) => any
+    prevChildren: React.ReactNode | undefined,
+    nextChildren: React.ReactNode | undefined,
+    unicityFn?: (element: React.ReactElement) => any
 ): boolean => {
     const previousMarkers = prevChildren ? childrenToReactElement(prevChildren) : [];
     const nextMarkers = nextChildren ? childrenToReactElement(nextChildren) : [];
@@ -56,30 +44,27 @@ export const matchChildren = (
     return diff.length === 0;
 };
 
-export const childrenToReactElement = (children: ReactNode | undefined): ReactElement[] =>
-    Children
+export const childrenToReactElement = (children: React.ReactNode | undefined): React.ReactElement[] =>
+    React.Children
         .toArray(children)
-        .filter(isValidElement);
+        .filter(React.isValidElement);
 
 /*
  ** Hooks
  */
 
-type StateValue<S extends any> = S | (() => S);
-type StateReturn<S extends any> = [S, React.Dispatch<React.SetStateAction<S>>];
-
 export const useSafeState = <S extends any>(
     initialState: StateValue<S>
 ): [S, React.Dispatch<React.SetStateAction<S>>] => {
-    const mounted = useRef(false);
-    const [state, setState] = useState(initialState);
-    const setter = useCallback((value: React.SetStateAction<S>) => {
+    const mounted = React.useRef(false);
+    const [state, setState] = React.useState(initialState);
+    const setter = React.useCallback((value: React.SetStateAction<S>) => {
         if (!mounted.current) return;
 
         setState(value);
     }, [setState, mounted]);
 
-    useEffect(() => {
+    React.useEffect(() => {
         mounted.current = true;
 
         return () => {
@@ -117,7 +102,7 @@ export const useAsync = <T>(
     const [value, setValue] = useSafeState<T | null>(null);
     const [error, setError] = useSafeState<unknown | null>(null);
 
-    const execute = useCallback(async (...args: unknown[]) => {
+    const execute = React.useCallback(async (...args: unknown[]) => {
         setPending(true);
         setValue(null);
         setError(null);
@@ -137,7 +122,7 @@ export const useAsync = <T>(
         return fnResponse;
     }, dependencies); // eslint-disable-line react-hooks/exhaustive-deps
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (immediate) {
             execute();
         }
@@ -154,9 +139,9 @@ export const useAsync = <T>(
 export const useWhyDidYouUpdate = (name: string, props: Record<any, any>): void => {
     // Get a mutable ref object where we can store props
     // for comparison next time this hook runs.
-    const previousProps = useRef<any>();
+    const previousProps = React.useRef<any>();
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (previousProps.current) {
             const allKeys = Object.keys({ ...previousProps.current, ...props });
             const changesObj: Record<any, any> = {};
@@ -194,9 +179,9 @@ export const useInternalValue = <S extends any>(
     externalValue: StateValue<S> | null,
     defaultValue: StateValue<S> | null = null
 ): [S | null, React.Dispatch<React.SetStateAction<S | null>>] => {
-    const [internalValue, setInternalValue] = useState(externalValue || defaultValue);
+    const [internalValue, setInternalValue] = React.useState(externalValue || defaultValue);
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (externalValue !== internalValue) {
             setInternalValue(externalValue || defaultValue);
         }
@@ -218,7 +203,7 @@ const DEFAULT_OPTIONS = {
  ** => Returns the ref you should provide to the element you want to apply classes to
  */
 export const useAnimationClass = (options?: typeof DEFAULT_OPTIONS): any => {
-    const internalOptions = useMemo(() => {
+    const internalOptions = React.useMemo(() => {
         const opt = { ...DEFAULT_OPTIONS };
 
         if (isObjectLike(options)) {
@@ -232,8 +217,8 @@ export const useAnimationClass = (options?: typeof DEFAULT_OPTIONS): any => {
         return opt;
     }, [options]);
 
-    const ref = useRef<any>(null);
-    const trigger = useCallback((cb = () => void {}) => {
+    const ref = React.useRef<any>(null);
+    const trigger = React.useCallback((cb = () => void {}) => {
         const element = ref.current;
 
         if (isObjectLike(element)) {
@@ -255,7 +240,7 @@ export const useAnimationClass = (options?: typeof DEFAULT_OPTIONS): any => {
         }
     }, [ref, internalOptions.onTriggerClass]);
 
-    const clearAnimationClasses = useCallback(() => {
+    const clearAnimationClasses = React.useCallback(() => {
         const element = ref.current;
 
         if (isObjectLike(element)) {
@@ -264,13 +249,13 @@ export const useAnimationClass = (options?: typeof DEFAULT_OPTIONS): any => {
         }
     }, [internalOptions.onEnterClass, internalOptions.onTriggerClass]);
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (isObjectLike(ref.current)) {
             ref.current.classList.add(internalOptions.onEnterClass);
         }
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    useEffect(() => {
+    React.useEffect(() => {
         const element = ref.current;
 
         if (isObjectLike(element)) {
@@ -291,46 +276,8 @@ export const useAnimationClass = (options?: typeof DEFAULT_OPTIONS): any => {
     return [ref, trigger];
 };
 
-type GlobalStateHook<S extends any> = (value?: S | (() => S), deps?: React.DependencyList) => StateReturn<S>;
-
-/*
- ** Global state hook constructor
- ** > [Optional] initial value for the state
- ** => Returns the hook to manage the state
- **
- ** Manage global state
- ** > value that will update the state depending on the memoize of this value
- ** > dependencies to update the memoized value
- ** => Returns an array that can be destructured : [value, setState] (such as useState API)
- */
-export const createGlobalStateHook = <S extends any>(initValue: StateValue<S>): GlobalStateHook<S> => {
-    const observer = new Observer();
-    let lastKnownState = initValue;
-
-    const applyStateChange = (newState: any) => {
-        lastKnownState = newState;
-        observer.notify(newState);
-    };
-
-    return (value?: S | (() => S), deps: React.DependencyList = []): StateReturn<S> => {
-        const [state, setState] = useState(lastKnownState);
-        const memoizedValue = useMemo(() => value, deps); // eslint-disable-line react-hooks/exhaustive-deps
-
-        useEffect(() => {
-            // subscribe to state changes 
-            const unsubscribe = observer.subscribe(setState);
-
-            // Ensures the state is still up to date
-            if (lastKnownState !== state) setState(lastKnownState);
-
-            if (!isUndefined(memoizedValue)) applyStateChange(memoizedValue);
-
-            return unsubscribe;
-        }, [memoizedValue]); // eslint-disable-line react-hooks/exhaustive-deps
-
-        return useMemo(() => [state, applyStateChange], [state]);
-    };
-};
+export { default as createGlobalStateHook } from './createGlobalStateHook';
+export { default as createHistoryHook } from './createHistoryHook';
 
 /*
  ** Use state async which resolves a promise once the state is updated
@@ -341,15 +288,15 @@ export const createGlobalStateHook = <S extends any>(initValue: StateValue<S>): 
 export const useAsyncState = <S extends any>(
     initialState: StateValue<S>
 ): [S, (value: React.SetStateAction<S>) => Promise<unknown>] => {
-    const [state, setState] = useState(initialState);
-    const [resolver, setResolver] = useState<any>(() => noop);
-    const setter = useCallback((value: React.SetStateAction<S>) => {
+    const [state, setState] = React.useState(initialState);
+    const [resolver, setResolver] = React.useState<any>(() => noop);
+    const setter = React.useCallback((value: React.SetStateAction<S>) => {
         setState(value);
 
         return new Promise(resolve => setResolver(() => resolve));
     }, [setState]);
 
-    useEffect(() => resolver(state), [state, resolver]);
+    React.useEffect(() => resolver(state), [state, resolver]);
 
     return [state, setter];
 };
@@ -362,7 +309,7 @@ export const useAsyncState = <S extends any>(
 export const useANDLogic = (...conditions: (boolean | AnyFunctionReturning<boolean>)[]): boolean => {
     if (!isArray(conditions)) throw new TypeError('conditions are not valid');
 
-    return useMemo(
+    return React.useMemo(
         () => conditions.reduce<boolean>((compute, condition) => {
             if (!compute) return compute;
 
@@ -384,7 +331,7 @@ export const useANDLogic = (...conditions: (boolean | AnyFunctionReturning<boole
 export const useORLogic = (...conditions: (boolean | AnyFunctionReturning<boolean>)[]): boolean => {
     if (!isArray(conditions)) throw new TypeError('conditions are not valid');
 
-    return useMemo(
+    return React.useMemo(
         () => conditions.reduce<boolean>((compute, condition) => {
             if (compute) return compute;
 
@@ -406,7 +353,7 @@ export const useORLogic = (...conditions: (boolean | AnyFunctionReturning<boolea
 export const useError = (...errors: any[]): [boolean, any[]] => {
     if (!isArray(errors)) throw new TypeError('errors are not valid');
 
-    return useMemo(
+    return React.useMemo(
         () => {
             const properErrors = errors.filter(isDefined);
             return [properErrors.length > 0, properErrors];
@@ -416,9 +363,9 @@ export const useError = (...errors: any[]): [boolean, any[]] => {
 };
 
 export const useFirstEffect = (effect: React.EffectCallback, dependencies: unknown[] = []): void => {
-    const occurred = useRef(false);
+    const occurred = React.useRef(false);
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (occurred.current) return;
 
         occurred.current = true;
@@ -427,9 +374,9 @@ export const useFirstEffect = (effect: React.EffectCallback, dependencies: unkno
 };
 
 export const useFirstDefined = (effect: React.EffectCallback, value: unknown): void => {
-    const occurred = useRef(false);
+    const occurred = React.useRef(false);
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (occurred.current || !isDefined(value)) return;
 
         occurred.current = true;
@@ -442,7 +389,7 @@ export const useManInTheMiddle = (
     children: React.ReactNode,
     dependencies: any[],
     methodsName: string[] = ['onChange']
-): ReactElement[] => useMemo(() => childrenToReactElement(children).map(child => {
+): React.ReactElement[] => React.useMemo(() => childrenToReactElement(children).map(child => {
     const overridenMethods: Record<string, CallbackAnyArg> = {};
 
     methodsName.forEach(method => {
@@ -451,7 +398,7 @@ export const useManInTheMiddle = (
         overridenMethods[method] = (...args: any[]) => overrideCallback(originMethod, ...args);
     });
 
-    return cloneElement(child, { ...overridenMethods });
+    return React.cloneElement(child, { ...overridenMethods });
 }), dependencies); // eslint-disable-line react-hooks/exhaustive-deps
 
 export const useDebounce = (
@@ -459,7 +406,7 @@ export const useDebounce = (
     timeout: number = 0,
     interval: boolean = false
 ): CallbackAnyArg => {
-    const debounce = useMemo(() => {
+    const debounce = React.useMemo(() => {
         if (interval === true) {
             return new DebounceInterval((...args) => void handler(...args), timeout);
         }
@@ -467,12 +414,12 @@ export const useDebounce = (
         return new Debounce((...args: any[]) => void handler(...args), timeout);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    return useCallback((...args: any[]) => void debounce.push(...args), [debounce]);
+    return React.useCallback((...args: any[]) => void debounce.push(...args), [debounce]);
 };
 
 export const useDebounceValue = <T>(input: T, timeout: number = 0, interval: boolean = false): T => {
-    const [debouncedValue, setDebouncedValue] = useState(input);
-    const debounce = useMemo(() => {
+    const [debouncedValue, setDebouncedValue] = React.useState(input);
+    const debounce = React.useMemo(() => {
         if (interval === true) {
             return new DebounceInterval(value => setDebouncedValue(value), timeout);
         }
@@ -480,7 +427,7 @@ export const useDebounceValue = <T>(input: T, timeout: number = 0, interval: boo
         return new Debounce(value => setDebouncedValue(value), timeout);
     }, [setDebouncedValue, timeout, interval]);
 
-    useEffect(() => {
+    React.useEffect(() => {
         debounce.push(input);
     }, [input]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -488,12 +435,12 @@ export const useDebounceValue = <T>(input: T, timeout: number = 0, interval: boo
 };
 
 export const usePick = <T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> =>
-    useMemo(() => objectPick(obj, keys), [obj]); // eslint-disable-line react-hooks/exhaustive-deps
+    React.useMemo(() => objectPick(obj, keys), [obj]); // eslint-disable-line react-hooks/exhaustive-deps
 
 export const useLogRenders = (key: string, interval?: number): void => {
-    const counter = useRef(0);
-    const sinceLastLogCounter = useRef(0);
-    const logFormat = useMemo(() => {
+    const counter = React.useRef(0);
+    const sinceLastLogCounter = React.useRef(0);
+    const logFormat = React.useMemo(() => {
         let format = `[${key}] Total Render = {0}`;
 
         if (isValidNumber(interval)) format += ' | Since last log = {1}';
@@ -501,11 +448,11 @@ export const useLogRenders = (key: string, interval?: number): void => {
         return format;
     }, [key, interval]);
 
-    const onLog = useCallback((...args: any[]) => {
+    const onLog = React.useCallback((...args: any[]) => {
         console.log(...args); // eslint-disable-line no-console
         sinceLastLogCounter.current = 0;
     }, []);
-    const log = useMemo(() => {
+    const log = React.useMemo(() => {
         if (isValidNumber(interval)) {
             const debounce = new DebounceInterval(onLog, interval);
 
@@ -515,139 +462,9 @@ export const useLogRenders = (key: string, interval?: number): void => {
         return onLog;
     }, [interval, onLog]);
 
-    useEffect(() => {
+    React.useEffect(() => {
         counter.current += 1;
         sinceLastLogCounter.current += 1;
         log(stringFormat(logFormat, counter.current, sinceLastLogCounter.current));
     }); // eslint-disable-line react-hooks/exhaustive-deps
-};
-
-/*
- ** ==============================================
- ** History State
- ** ==============================================
- */
-
-type HistoryState<T> = {
-    history: T[];
-    pending: T | null;
-    currentPosition: number;
-};
-
-type HistoryActions<T> = {
-    push: (item: T) => void;
-    setPending: (item: T) => void;
-    replace: (item: T) => void;
-    goTo: (item: T) => void;
-};
-
-type History<T> =
-    & Pick<HistoryState<T>, 'history'>
-    & HistoryActions<T>
-    & {
-        current: T | null;
-        previous: T | null;
-        next: T | null;
-    };
-
-const trimForwardHistory = <T>(history: T[], currentIndex: number) => {
-    if (currentIndex < 0) return [];
-    if (history.length === (currentIndex + 1)) return [...history];
-
-    return take(history, currentIndex + 1);
-};
-
-export const createHistoryHook = <T>(matchPredicate: (item: T, compareWith: T) => boolean): () => History<T> => {
-    const useHistoryState = createGlobalStateHook<HistoryState<T>>({
-        history: [],
-        pending: null,
-        currentPosition: 0
-    });
-
-    return (): History<T> => {
-        const [state, setState] = useHistoryState();
-
-        return useMemo(() => {
-            const { history, currentPosition, pending } = state;
-            const positionOffset = pending ? 1 : 0;
-            const position = currentPosition + positionOffset;
-
-            return {
-                history,
-                current: pending ?? history[position] ?? null,
-                previous: position > 0 ? (history[position - 1] ?? null) : null,
-                next: (position + 1) < history.length ? (history[position + 1] ?? null) : null,
-                push: (item: T) => {
-                    if (!isDefined(item)) throw new TypeError('push history: item is not valid');
-
-                    if (pending && !matchPredicate(pending, item)) {
-                        console.warn('push history: new item doesn\'t match pending item');
-                        return;
-                    }
-
-                    if (pending && history[currentPosition] === pending) {
-                        return setState({
-                            history,
-                            currentPosition,
-                            pending: null
-                        });
-                    }
-
-                    let data: T[];
-
-                    if (history.length === currentPosition + 1) {
-                        data = [...history];
-                    }
-                    else {
-                        data = trimForwardHistory(history, currentPosition);
-                    }
-
-                    data.push(item);
-
-                    setState({
-                        history: data,
-                        currentPosition: data.length - 1,
-                        pending: null
-                    });
-                },
-                replace: (item: T) => {
-                    if (!isDefined(item)) throw new TypeError('replace history: item is not valid');
-
-                    const newPosition = currentPosition - (pending ? 0 : 1);
-                    const newState: HistoryState<T> = {
-                        history: trimForwardHistory(history, newPosition),
-                        currentPosition: newPosition,
-                        pending: item
-                    };
-
-                    setState(newState);
-                },
-                setPending: (item: T) => {
-                    if (!isDefined(item)) throw new TypeError('setPending history: item is not valid');
-
-                    const newState: HistoryState<T> = {
-                        history,
-                        currentPosition,
-                        pending: item
-                    };
-
-                    setState(newState);
-                },
-                goTo: (item: T) => {
-                    if (!isDefined(item)) throw new TypeError('goTo history: item is not valid');
-
-                    const idx = history.findIndex(historyItem => historyItem === item);
-                    if (idx === -1) throw new TypeError('goTo history: route not found');
-
-                    const newState: HistoryState<T> = {
-                        history,
-                        currentPosition: idx,
-                        pending: history[idx]
-                    };
-
-                    setState(newState);
-                }
-            };
-        }, [state, setState]);
-    };
 };

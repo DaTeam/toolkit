@@ -1,7 +1,7 @@
 {
     "name": "@dateam/ark",
     "description": "Ark",
-    "version": "0.1.13",
+    "version": "0.1.14",
     "module": "dist/index.js",
     "types": "dist/index.d.ts",
     "main": "dist/index.js",
@@ -35,10 +35,10 @@
     "devDependencies": {
         "@babel/cli": "7.12.8",
         "@babel/core": "^7.12.9",
-        "@types/jest": "^26.0.15",
-        "@types/node": "^14.14.10",
-        "@typescript-eslint/parser": "^4.9.0",
-        "eslint": "^7.14.0",
+        "@types/jest": "^26.0.18",
+        "@types/node": "^14.14.11",
+        "@typescript-eslint/parser": "^4.9.1",
+        "eslint": "^7.15.0",
         "eslint-config-airbnb": "^18.2.1",
         "eslint-plugin-import": "^2.22.1",
         "eslint-plugin-json": "^2.1.2",
