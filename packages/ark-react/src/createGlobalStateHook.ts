@@ -40,16 +40,13 @@ const createGlobalStateHook = <S>(initState: S | (() => S)): GlobalStateHook<S> 
     return {
         hook: (value?: S | (() => S)) => {
             const [state, setState] = React.useState<S>(value ?? lastKnownState);
-            // const memoizedValue = React.useMemo(() => value, deps);
 
             React.useEffect(() => {
                 // subscribe to state changes 
                 const unsubscribe = observer.subscribe(setState);
 
-                // Ensures the state is still up to date
-                if (lastKnownState !== state) setState(lastKnownState);
-
-                // if (!isUndefined(memoizedValue)) applyStateChange(memoizedValue);
+                // Apply state value if it has changed from hook init prop
+                if (lastKnownState !== state) applyStateChange(state);
 
                 return unsubscribe;
             }, []);
