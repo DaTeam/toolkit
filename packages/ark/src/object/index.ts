@@ -302,3 +302,27 @@ export const mapToDeepObject = (target: any, src: any, options: MapOptions = {
 
     innerMapToDeepObject(target, src, internalOptions);
 };
+
+export const compareShallowObject = (obj: any, withObj: any): boolean => {
+    if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
+    if (!isObjectLike(withObj)) throw new TypeError('withObj is not valid');
+
+    const enumarableObj = objectDefinedPropsOnly(obj);
+    const enumarableWithObj = objectDefinedPropsOnly(withObj);
+
+    const objKeys = Object.keys(enumarableObj);
+    const withObjKeys = Object.keys(enumarableWithObj);
+
+    if (compareCollection(objKeys, withObjKeys).length > 0) return false;
+
+    return !objKeys.some(key => obj[key] !== withObj[key]);
+};
+
+export const quickClone = <T>(arg: T): T | null => {
+    try {
+        return JSON.parse(JSON.stringify(arg, safeJsonReplacer), safeJsonReviver);
+    }
+    catch (error) {
+        return null;
+    }
+};

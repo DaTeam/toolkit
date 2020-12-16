@@ -1,7 +1,6 @@
 import { Type } from './types';
 
 const fnObjectToString = Object.prototype.toString;
-const ArrayProto = Array.prototype;
 const stringTag = '[object String]';
 const numberTag = '[object Number]';
 const dateTag = '[object Date]';
@@ -142,3 +141,17 @@ export class RegExp {
     public static readonly StringFormat = /{(\d+)}/g;
     public static readonly LocalIP = /^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/;
 }
+
+/**
+ ** Object
+ */
+
+export const getPropertySafe = (obj: any, propertyAccessor: string): any | undefined => {
+    if (!isString(propertyAccessor)) return null;
+
+    const retValue = propertyAccessor
+        .split('.')
+        .reduce((acc, part) => acc && acc[part], obj);
+
+    return retValue ?? null;
+};
