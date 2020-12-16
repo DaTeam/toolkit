@@ -434,7 +434,7 @@ export const useDebounceValue = <T>(input: T, timeout: number = 0, interval: boo
     return debouncedValue;
 };
 
-export const usePick = <T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> =>
+export const usePick = <T, K extends keyof T>(obj: Readonly<T>, keys: K[]): Pick<T, K> =>
     React.useMemo(() => objectPick(obj, keys), [obj]); // eslint-disable-line react-hooks/exhaustive-deps
 
 export const useLogRenders = (key: string, interval?: number): void => {
