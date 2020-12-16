@@ -1051,8 +1051,10 @@ export const setIntervalAsync = (handler: () => any, timeout?: number) => {
 export const noop = (): void => { };
 
 /*
- ** Objects
+ ** Object
  */
+
+export * from './object';
 
 export const hasProperty = <T>(obj: T, prop: any): prop is keyof T => {
     if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
@@ -1699,45 +1701,6 @@ String.prototype.insertAt = String.prototype.insertAt ||
 
         return splitDigits.join('');
     };
-
-/*
- ** Object Extension
- */
-
-declare global {
-    interface Object {
-        forEachProperty(callbackfn: (value: any, key: string) => void): void;
-        mapEachProperty(callbackfn: (value: any, key: string) => any): any[];
-    }
-}
-
-function forEachProperty<T extends Object>(this: T, callbackfn: (value: any, key: string) => void): void {
-    Object.keys(this).forEach(key => callbackfn(this[key as keyof T], key));
-}
-
-function mapEachProperty<T extends Object>(this: T, callbackfn: (value: any, key: string) => any): any[] {
-    return Object.keys(this).map(key => callbackfn(this[key as keyof T], key));
-}
-
-// Specific format for react-native
-if (!Object.prototype.forEachProperty) {
-    Object.defineProperty(Object.prototype, forEachProperty.name, {
-        value: forEachProperty,
-        enumerable: false,
-        configurable: true,
-        writable: true
-    });
-}
-
-// Specific format for react-native
-if (!Object.prototype.mapEachProperty) {
-    Object.defineProperty(Object.prototype, mapEachProperty.name, {
-        value: mapEachProperty,
-        enumerable: false,
-        configurable: true,
-        writable: true
-    });
-}
 
 /*
  ** Array Extension
