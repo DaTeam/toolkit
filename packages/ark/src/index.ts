@@ -1469,7 +1469,7 @@ export type NetworkOptions = {
     immediate?: boolean; // Default: true
 };
 
-class NetworkConnectivity {
+export class NetworkConnectivity {
     private endpoint?: string;
     private pingInterval: number = 30000;
     private clearPingInterval: () => void;
@@ -1571,7 +1571,6 @@ class NetworkConnectivity {
 
     // Used to define the new status and whether an update is required or not 
     private async getUpdatedStatus(newStatus: boolean): Promise<boolean | undefined> {
-        console.log('newStatus', newStatus, this.isOnline);
         if (newStatus === true) {
             let isOnline = false;
 

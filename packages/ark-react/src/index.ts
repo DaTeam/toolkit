@@ -277,10 +277,6 @@ export const useAnimationClass = (options?: typeof DEFAULT_OPTIONS): any => {
     return [ref, trigger];
 };
 
-export { default as createGlobalStateHook } from './createGlobalStateHook';
-export { default as createHistoryHook } from './createHistoryHook';
-export { default as concatClassName } from './concatClassName';
-
 /*
  ** Use state async which resolves a promise once the state is updated
  ** > [Optional] initial value for the state
@@ -470,3 +466,10 @@ export const useLogRenders = (key: string, interval?: number): void => {
         log(stringFormat(logFormat, counter.current, sinceLastLogCounter.current));
     }); // eslint-disable-line react-hooks/exhaustive-deps
 };
+
+
+export { default as createGlobalStateHook } from './createGlobalStateHook';
+export { default as createHistoryHook } from './createHistoryHook';
+export { default as concatClassName } from './concatClassName';
+export { default as useConnectivity } from './useConnectivity';
+export * from './useConnectivity';
