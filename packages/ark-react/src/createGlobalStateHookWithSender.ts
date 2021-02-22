@@ -19,39 +19,50 @@ type GlobalStateHook<S> = {
     getState: () => S;
     setState: (newState: (S | ((prevState: S) => S))) => void;
 };
+type InternalState<S> = {
+    state: S;
+    senderId?: number;
+};
 
 const createGlobalStateHook = <S>(initState: S | (() => S)): GlobalStateHook<S> => {
-    const observer = new Observer<S>();
-    let lastKnownState: S;
+    const observer = new Observer<InternalState<S>>();
+    let lastKnownState: InternalState<S>;
 
-    if (isFunction(initState)) lastKnownState = initState();
-    else lastKnownState = initState;
+    if (isFunction(initState)) lastKnownState = { state: initState() }
+    else lastKnownState = { state: initState }
 
     const getStateValue = (newState: (S | ((prevState: S) => S)), lastKnownState: S): S => {
         if (isFunction(newState)) return newState(lastKnownState);
         return newState;
     };
 
-    const applyStateChange = (newState: (S | ((prevState: S) => S))) => {
-        lastKnownState = getStateValue(newState, lastKnownState);
+    const applyStateChange = (newState: (S | ((prevState: S) => S)), senderId?: number) => {
+        lastKnownState = {
+            state: getStateValue(newState, lastKnownState.state),
+            senderId
+        };
+
         observer.notify(lastKnownState);
     };
 
+    let senderId = 0;
+
     return {
         hook: value => {
-            const [state, setState] = React.useState<S>(value ?? lastKnownState);
+            const [state, setState] = React.useState<S>(value ?? lastKnownState.state);
+            const hookId = React.useMemo(() => ++senderId, []);
 
             React.useEffect(() => {
                 // Apply state value if it has changed from hook init prop
-                if (lastKnownState !== state) applyStateChange(state);
+                if (lastKnownState.state !== state) applyStateChange(state, hookId);
 
                 // subscribes to state changes and returns unsubscribe function
-                return observer.subscribe(setState);
+                return observer.subscribe(({ senderId, state }) => senderId !== hookId && setState(state));
             }, []);
 
             return React.useMemo(() => [state, applyStateChange], [state]);
         },
-        getState: () => lastKnownState,
+        getState: () => lastKnownState.state,
         setState: newState => void applyStateChange(newState)
     };
 };

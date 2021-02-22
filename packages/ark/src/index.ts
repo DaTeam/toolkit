@@ -1,5 +1,7 @@
 /* eslint-disable no-extend-native */
 
+import { forEachProperty, ObjectAccessor, ObjectAccessorValue } from './object';
+
 export enum Type {
     Null = 1 << 0,
     Number = 1 << 1,
@@ -13,9 +15,28 @@ export enum Type {
     Valid = 1 << 9,
     Undefined = 1 << 10
 }
+
+/*
+** Mapped types
+*/
 export type Nullable<T> = T | null;
+export type Writeable<T> = { -readonly [P in keyof T]: T[P] };
+export type DeepWriteable<T> = { -readonly [P in keyof T]: DeepWriteable<T[P]> };
+export type Required<T> = { [P in keyof T]-?: T[P] };
+export type ValuesOf<T extends readonly any[]> = T[number];
+export type NonEmptyArray<T> = [T, ...T[]];
+export type ArrayType<T extends Array<any>> = T extends (infer U)[] ? U : never;
 export type Maybe<T> = T | null | undefined;
 export type AnyFunctionReturning<T> = (...args: any[]) => T;
+
+/*
+ ** Common Types
+ */
+export type CustomRange<S = any, E = any> = { start: S, end: E };
+export type RefLabel<T = number> = {
+    id: T;
+    label: string;
+};
 
 type NativeRegExp = globalThis.RegExp;
 
@@ -27,7 +48,7 @@ const dateTag = '[object Date]';
 const arrayTag = '[object Array]';
 const boolTag = '[object Boolean]';
 
-let undef: undefined;
+export let undef: undefined;
 
 export const requireExtendedPrototypes = (): void => { };
 
@@ -127,7 +148,7 @@ export const isDate = (arg: any): arg is Date =>
 export const isValidDate = (arg: any): arg is Date => isDate(arg) && !isNaN(arg.getTime());
 export const isUndefined = (arg: any): arg is undefined => arg === undef;
 export const isNull = (arg: any): arg is null => arg === null;
-export const isObjectLike = (arg: any): boolean => !!arg && typeof arg === 'object'; // eslint-disable-line eqeqeq
+export const isObjectLike = (arg: any): arg is Record<any, any> => !!arg && typeof arg === 'object'; // eslint-disable-line eqeqeq
 export const isNativeTypeObject = (arg: any): boolean =>
     isUndefined(arg) ||
     isNull(arg) ||
@@ -346,7 +367,7 @@ export const find = <T>(array: T[], predicate: (item: T, index: number) => boole
 
 export const orderBy = <T>(
     array: T[],
-    propertyAccessor: string,
+    propertyAccessor: ObjectAccessor<T>,
     options?: { nullFirst?: boolean; ascending?: boolean }
 ): void => {
     if (!isArray(array) || !isString(propertyAccessor)) {
@@ -366,8 +387,8 @@ export const orderBy = <T>(
         const aProperty = getPropertySafe(itemA, propertyAccessor);
         const bProperty = getPropertySafe(itemB, propertyAccessor);
 
-        if (aProperty === null) return nullOrderValue * 1;
-        if (bProperty === null) return nullOrderValue * -1;
+        if (aProperty == null) return nullOrderValue * 1;
+        if (bProperty == null) return nullOrderValue * -1;
         if (aProperty < bProperty) return ascOrderValue * -1;
         if (aProperty > bProperty) return ascOrderValue * 1;
 
@@ -375,10 +396,10 @@ export const orderBy = <T>(
     });
 };
 
-export const sortByProperty = <T = any, PropertyT = any>(
+export const sortByProperty = <T, A extends ObjectAccessor<T>>(
     array: T[],
-    propertyAccessor: string,
-    compareFn: (a: PropertyT, b: PropertyT) => number,
+    propertyAccessor: A,
+    compareFn: (a: ObjectAccessorValue<T, A> | undefined, b: ObjectAccessorValue<T, A> | undefined) => number,
     options?: { nullFirst?: boolean, ascending?: boolean }
 ): void => {
     if (!isArray(array) || !isString(propertyAccessor) || !isFunction(compareFn)) {
@@ -437,10 +458,14 @@ export const removeFromCollection = <T>(
 };
 
 export const removeAt = <T>(array: T[], index: number): void => {
+    removeFrom(array, index, 1);
+};
+
+export const removeFrom = <T>(array: T[], index: number, count?: number): void => {
     if (!isArray(array)) throw new TypeError('array is not valid');
     if (!isValidNumber(index)) throw new TypeError('index is not valid');
 
-    array.splice(index, 1);
+    array.splice(index, count);
 };
 
 export const insertAt = <T>(array: T[], index: number, item: T): void => {
@@ -542,6 +567,23 @@ export const randomNumber = (minValue: number, maxValue: number): number =>
  ** Date
  */
 
+const HOUR_MINUTES = 60;
+const MINUTE_MILLISEC = 1000;
+
+let toJSONDateFallback = Date.prototype.toJSON;
+
+export const overrideDateJsonAsUTC = () => {
+    toJSONDateFallback = Date.prototype.toJSON;
+
+    Date.prototype.toJSON = function () {
+        return formatDateTimeUTC(this);
+    };
+};
+
+export const rollbackDateJsonAsUTC = () => {
+    Date.prototype.toJSON = toJSONDateFallback;
+};
+
 export const dateOnly = (date: Date): Date => {
     if (!isValidDate(date)) throw new TypeError('date is not valid');
 
@@ -596,6 +638,37 @@ export const dateToFormat: (value: Date, format?: string) => string =
         }
 
         return format;
+    };
+
+export const formatDateTimeUTC = (date: Date): string => {
+    const dateStr = formatDateUTC(date);
+    const timeStr = formatHourUTC(date);
+
+    return `${dateStr} ${timeStr}`;
+};
+
+export const formatDateUTC: (date: Date, customFn?: (year: string, month: string, day: string) => string) => string =
+    (date, customFn = (year, month, day) => `${day}/${month}/${year}`) => {
+        if (!isValidDate(date)) throw new TypeError('date is not valid');
+        if (!isFunction(customFn)) throw new TypeError('customFn is not valid');
+
+        const day = fixedLenInteger(date.getUTCDate(), 2);
+        const month = fixedLenInteger(date.getUTCMonth() + 1, 2);
+        const year = fixedLenInteger(date.getUTCFullYear(), 4);
+
+        return customFn(year, month, day);
+    };
+
+export const formatHourUTC: (date: Date, customFn?: (h: string, m: string, s: string) => string) => string =
+    (date, customFn = (hour, minute, second) => `${hour}:${minute}:${second}`) => {
+        if (!isDate(date) || !isValidDate(date)) throw new TypeError('date is not valid');
+        if (!isFunction(customFn)) throw new TypeError('customFn is not valid');
+
+        const hourStr = fixedLenInteger(date.getUTCHours(), 2);
+        const minuteStr = fixedLenInteger(date.getUTCMinutes(), 2);
+        const secondStr = fixedLenInteger(date.getUTCSeconds(), 2);
+
+        return customFn(hourStr, minuteStr, secondStr);
     };
 
 export const parseDate = (text: string): Date | null => {
@@ -656,6 +729,13 @@ export const parseDate = (text: string): Date | null => {
     }
 };
 
+export const parseDateUTC = (text: string): Date | null => {
+    const date = parseDate(text);
+    if (!isValidDate(date)) return null;
+
+    return getTimezoneOffsetDate(date);
+};
+
 export const parseTime = (text: string, defaultDate?: Date): Date | null => {
     if (!isString(text)) throw new TypeError('text is not valid');
 
@@ -704,7 +784,9 @@ export const parseTime = (text: string, defaultDate?: Date): Date | null => {
     }
 };
 
-// TOOD: handle this format : 2020-09-17T00:00:00Z https://www.regextester.com/97766
+export const getTimezoneOffsetDate = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * HOUR_MINUTES * MINUTE_MILLISEC);
+
+// TODO: handle this format : 2020-09-17T00:00:00Z https://www.regextester.com/97766
 
 export const parseIsoDate = (value: string): Date => {
     if (!isString(value)) throw new TypeError('value is not valid');
@@ -781,27 +863,19 @@ export type ConditionalParams = Maybe<
     | { [key: string]: boolean }
 >;
 
-export const conditionalConcat = (...args: ConditionalParams[]): string | undefined => {
-    if (!isArray(args)) return undef;
+export const conditionalConcat = (...args: ConditionalParams[]): string => {
+    return args.reduce((acc: string[], item) => {
+        if (!isDefined(item)) return acc;
 
-    const finalClassName: string[] = [];
-
-    args.forEach(item => {
-        if (!isDefined(item)) return;
-
-        if (isString(item)) {
-            finalClassName.push(item);
+        if (isString(item)) acc.push(item);
+        else if (isObjectLike(item)) {
+            forEachProperty(item, ((key: string) => {
+                if (item[key]) acc.push(key);
+            }));
         }
-        else {
-            Object.keys(item).forEach((key: string) => {
-                if (item[key]) {
-                    finalClassName.push(key);
-                }
-            });
-        }
-    });
 
-    return finalClassName.length > 0 ? finalClassName.join(' ') : undef;
+        return acc;
+    }, []).join(' ');
 };
 
 export const isCollectionOf = <T = any>(array: T[], instanceOf: any): boolean => {
@@ -830,13 +904,15 @@ export const getObjectKeysDeep = (object: any, prefix: string = ''): string[] =>
     let internalPrefix = prefix;
     if (internalPrefix.length > 0) internalPrefix += '.';
 
-    Object.keys(object).forEach((prop: string) => {
+    forEachProperty(object, ((prop: string) => {
         const propName = internalPrefix + prop;
+
         keys.push(propName);
+
         if (!isNativeTypeObject(object[prop]) && isObjectLike(object)) {
             keys.push(...getObjectKeysDeep(object[prop], propName));
         }
-    });
+    }));
 
     return keys;
 };
@@ -926,27 +1002,42 @@ export const compareShallowObject = (obj: any, withObj: any): boolean => {
     return !objKeys.some(key => obj[key] !== withObj[key]);
 };
 
-export const getPropertySafe = (obj: any, propertyAccessor: string): any | undefined => {
-    if (!isString(propertyAccessor)) return null;
-    const retValue = propertyAccessor
-        .split('.')
-        .reduce((acc, part) => acc && acc[part], obj);
+export const getPropertySafe = <T, P extends ObjectAccessor<T>>(obj: T, propertyAccessor: P): ObjectAccessorValue<T, P> | undefined => {
+    if (!isString(propertyAccessor) || propertyAccessor.length === 0) return undefined;
 
-    return retValue ?? null;
+    const accessedValue = propertyAccessor
+        .split('.')
+        .reduce<ObjectAccessorValue<T, P> | undefined>((acc: T | ObjectAccessorValue<T, P> | undefined, part, idx, arr) => {
+            if (isString(part) && part.length !== 0 && isObjectLike(acc)) {
+                return (acc as Record<any, any>)[part];
+            }
+
+            removeFrom(arr, idx);
+            return undefined;
+
+        }, obj as any);
+
+    return accessedValue;
 };
 
 export const cast = <T>(arg: any): T => arg as T;
 
+const BIG_INT_SUPPORTED = isFunction(BigInt);
+
 export const safeJsonReplacer = (_key: any, value: any) => {
+    if (BIG_INT_SUPPORTED && typeof value === "bigint") return `BIGINT::${value}`;
     if (isNaN(value)) return 'NaN';
     if (value === Infinity) return 'Infinity';
     if (value === -Infinity) return '-Infinity';
-    if (isString(value)) {
-        const matches = value.match(RegExp.IsoDate);
-        if (isArray(matches) && isDate(safeParseIsoDate(value))) {
-            return `$\{DATE_${value}\}`; // eslint-disable-line no-useless-escape
-        }
+    if (isValidDate(value)) {
+        return `$\{DATE_${value.toISOString()}\}`; // eslint-disable-line no-useless-escape
     }
+    // if (isString(value)) {
+    //     const matches = value.match(RegExp.IsoDate);
+    //     if (isArray(matches) && isDate(safeParseIsoDate(value))) {
+    //         return `$\{DATE_${value}\}`; // eslint-disable-line no-useless-escape
+    //     }
+    // }
 
     return value;
 };
@@ -955,6 +1046,7 @@ export const safeJsonReviver = (_key: any, value: any) => {
     if (value === 'NaN') return NaN;
     if (value === 'Infinity') return Infinity;
     if (value === '-Infinity') return -Infinity;
+    if (BIG_INT_SUPPORTED && isString(value) && value.startsWith('BIGINT::')) return BigInt(value.substr(8));
 
     if (isString(value)) {
         const match = value.match(RegExp.EscapedIsoDate);
@@ -1122,7 +1214,7 @@ export const objectDefinedPropsOnly = <T>(obj: T): Partial<T> => {
     );
 };
 
-export const objectPick = <T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> => {
+export const objectPick = <T, K extends keyof T>(obj: Readonly<T>, keys: Readonly<K[]>): Pick<T, K> => {
     if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
     if (!isArray(keys)) throw new TypeError('keys ares not valid');
 
@@ -1187,7 +1279,7 @@ export const objectOmit = <T, K extends keyof T>(obj: T, keys: K[]): Omit<T, K> 
  **     const data = { id: '1', parent: { id: '2', parent: { id: '3', parent: null } } };
  **     objectDeepMap(data, obj => [obj.parent, obj.id]);
  */
-export const objectDeepMap = <T extends any, R extends any>(
+export const objectDeepMap = <T extends Record<any, any>, R extends any>(
     obj: T,
     computeFn: (obj: T) => [T, R],
     limit?: number,
@@ -1262,17 +1354,17 @@ export class TimeoutPromise<T> {
     }
 }
 
-export class Debounce {
-    protected handler: (...args: any[]) => unknown;
+export class Debounce<H extends (...args: any[]) => unknown> {
+    protected handler: H;
     protected timeout: number;
     protected timeoutId!: any;
 
-    constructor(handler: (...args: any[]) => unknown, timeout: number) {
+    constructor(handler: H, timeout: number) {
         this.handler = handler;
         this.timeout = timeout;
     }
 
-    push = (...args: any[]): void => {
+    push = (...args: Parameters<H>): void => {
         clearTimeout(this.timeoutId);
 
         try {
@@ -1290,19 +1382,19 @@ export class Debounce {
     }
 }
 
-export class DebounceInterval {
-    protected handler: (...args: any[]) => unknown;
+export class DebounceInterval<H extends (...args: any[]) => unknown> {
+    protected handler: H;
     protected timeout: number;
     protected timeoutId!: any;
     protected pushAwaiting: boolean = false;
     protected lastValue: any[] = [];
 
-    constructor(handler: (...args: any[]) => unknown, timeout: number) {
+    constructor(handler: H, timeout: number) {
         this.handler = handler;
         this.timeout = timeout;
     }
 
-    push = (...args: any[]): void => {
+    push = (...args: Parameters<H>): void => {
         this.lastValue = args;
 
         if (this.pushAwaiting === false) {
@@ -1366,6 +1458,140 @@ export class TimedNotifier<T extends any = any> extends Observer<T, TimedNotifie
             Promise.all(this.subscribers.map(sub => new Promise((resolve, reject) => sub(data, resolve, reject)))),
             new Promise(resolve => setTimeout(resolve, this.maxTimeout))
         ]);
+    }
+}
+
+/*
+ ** Network
+ */
+export type NetworkOptions = {
+    endpoint?: string; // TODO: Idea - Improve by allowing multiple endpoints
+    immediate?: boolean; // Default: true
+};
+
+class NetworkConnectivity {
+    private endpoint?: string;
+    private pingInterval: number = 30000;
+    private clearPingInterval: () => void;
+    private observer: Observer<boolean, (isOnline: boolean) => void> = new Observer();
+    private isMonitoring: boolean = false;
+
+    public isSupported: boolean = true;
+    public isOnline: boolean = false;
+
+    constructor(options?: NetworkOptions) {
+        const { endpoint, immediate } = options ?? {};
+
+        this.endpoint = endpoint;
+
+        if (window == null || !('navigator' in window)) {
+            this.isSupported = false;
+            return;
+        }
+
+        if (immediate !== false) this.startMonitoring();
+    }
+
+    subscribe(callback: (isOnline: boolean) => void): () => void {
+        return this.observer.subscribe(callback);
+    }
+
+    startMonitoring(): void {
+        if (!this.isSupported) return;
+        if (this.isMonitoring) return;
+
+        this.isMonitoring = true;
+
+        this.getUpdatedStatus(window.navigator?.onLine ?? true)
+            .then(statusUpdate => {
+                if (statusUpdate != null) {
+                    this.isOnline = statusUpdate;
+                    this.observer.notify(this.isOnline);
+                }
+            });
+
+        this.clearPingInterval = setIntervalAsync(async () => {
+            const statusUpdate = await this.getUpdatedStatus(true);
+
+            if (statusUpdate != null) {
+                this.isOnline = statusUpdate;
+                this.observer.notify(this.isOnline);
+            }
+        }, this.pingInterval);
+
+        window.addEventListener('online', this.onlineHandler);
+        window.addEventListener('offline', this.offlineHandler);
+    }
+
+    stopMonitoring(): void {
+        if (!this.isMonitoring) return;
+
+        window.removeEventListener('online', this.onlineHandler);
+        window.removeEventListener('offline', this.offlineHandler);
+
+        if (isFunction(this.clearPingInterval)) this.clearPingInterval();
+    }
+
+    private async pingEndpoint(): Promise<boolean> {
+        if (!isString(this.endpoint)) return true;
+
+        try {
+            const response = await fetch(this.endpoint);
+
+            // HTTP Codes 4XX and 5XX are categorized as error
+            const strStatus = response.status.toString();
+            const hasError = strStatus.startsWith('4') || strStatus.startsWith('5');
+
+            if (!hasError) return true;
+        }
+        catch {
+            // Ignore
+        }
+
+        return false;
+    }
+
+    private onlineHandler = async () => {
+        const statusUpdate = await this.getUpdatedStatus(true);
+
+        if (statusUpdate != null) {
+            this.isOnline = statusUpdate;
+            this.observer.notify(this.isOnline);
+        }
+    }
+
+    private offlineHandler = async () => {
+        const statusUpdate = await this.getUpdatedStatus(false);
+
+        if (statusUpdate != null) {
+            this.isOnline = statusUpdate;
+            this.observer.notify(this.isOnline);
+        }
+    }
+
+    // Used to define the new status and whether an update is required or not 
+    private async getUpdatedStatus(newStatus: boolean): Promise<boolean | undefined> {
+        console.log('newStatus', newStatus, this.isOnline);
+        if (newStatus === true) {
+            let isOnline = false;
+
+            try {
+                isOnline = await this.pingEndpoint();
+            }
+            catch {
+                // Ignore
+            }
+
+            if (this.isOnline === true && isOnline === true) return;
+            if (this.isOnline !== isOnline) {
+                return isOnline;
+            }
+        }
+        else if (this.isOnline === true) {
+            return false;
+        }
+
+        return undefined;
     }
 }
 

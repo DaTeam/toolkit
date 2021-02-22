@@ -174,6 +174,7 @@ export const useWhyDidYouUpdate = (name: string, props: Record<any, any>): void 
  ** In the case the external value updated with an undefined value, state will be updated with default value
  ** => Returns an array that can be destructured : [value, setState] (such as useState API)
  ** [Possible use case] Wanting to have an internal state whilst overriding it with parent props
+ ** TODO: Change behavior to have undefined instead of null as fallback value
  */
 export const useInternalValue = <S extends any>(
     externalValue: StateValue<S> | null,
@@ -278,6 +279,7 @@ export const useAnimationClass = (options?: typeof DEFAULT_OPTIONS): any => {
 
 export { default as createGlobalStateHook } from './createGlobalStateHook';
 export { default as createHistoryHook } from './createHistoryHook';
+export { default as concatClassName } from './concatClassName';
 
 /*
  ** Use state async which resolves a promise once the state is updated
@@ -401,20 +403,20 @@ export const useManInTheMiddle = (
     return React.cloneElement(child, { ...overridenMethods });
 }), dependencies); // eslint-disable-line react-hooks/exhaustive-deps
 
-export const useDebounce = (
-    handler: CallbackAnyArg,
+export const useDebounce = <Callback extends (...args: any[]) => unknown>(
+    handler: Callback,
     timeout: number = 0,
     interval: boolean = false
-): CallbackAnyArg => {
+): (...args: Parameters<Callback>) => void => {
     const debounce = React.useMemo(() => {
         if (interval === true) {
-            return new DebounceInterval((...args) => void handler(...args), timeout);
+            return new DebounceInterval((...args: any[]) => handler(...args), timeout);
         }
 
-        return new Debounce((...args: any[]) => void handler(...args), timeout);
+        return new Debounce((...args: any[]) => handler(...args), timeout);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    return React.useCallback((...args: any[]) => void debounce.push(...args), [debounce]);
+    return React.useCallback((...args: Parameters<Callback>) => void debounce.push(...args), [debounce]);
 };
 
 export const useDebounceValue = <T>(input: T, timeout: number = 0, interval: boolean = false): T => {
@@ -434,7 +436,7 @@ export const useDebounceValue = <T>(input: T, timeout: number = 0, interval: boo
     return debouncedValue;
 };
 
-export const usePick = <T, K extends keyof T>(obj: Readonly<T>, keys: K[]): Pick<T, K> =>
+export const usePick = <T, K extends keyof T>(obj: Readonly<T>, keys: Readonly<K[]>): Pick<T, K> =>
     React.useMemo(() => objectPick(obj, keys), [obj]); // eslint-disable-line react-hooks/exhaustive-deps
 
 export const useLogRenders = (key: string, interval?: number): void => {
