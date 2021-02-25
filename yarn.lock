@@ -1451,7 +1451,7 @@ __metadata:
     rimraf: 3.0.2
     typescript: ^4.1.2
   peerDependencies:
-    "@dateam/ark": ^0.1.25
+    "@dateam/ark": ^0.2.1
     react: ^17.0.1
     react-dom: ^17.0.1
   languageName: unknown
@@ -1496,7 +1496,23 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@dateam/ark@^0.1.25, @dateam/ark@workspace:packages/ark":
+"@dateam/ark@npm:^0.0.8":
+  version: 0.0.8
+  resolution: "@dateam/ark@npm:0.0.8"
+  checksum: f19e344cb882b86f182106e32c54ead0d573cd3e284875226eae6f12cc9162468223babbee6668d8e9a01fdc8ea8dede94af1089d24c9ddd1d4cf9b7f39b7c87
+  languageName: node
+  linkType: hard
+
+"@dateam/ark@npm:^0.1.25":
+  version: 0.1.26
+  resolution: "@dateam/ark@npm:0.1.26"
+  dependencies:
+    "@babel/runtime": ^7.12.5
+  checksum: b55e48cb46817ebe4c268c3a7741863cc31131828c9fafd4d60800d20817365b74455a4e19c5da4d8c8bd28cf39de1c6c8523ceaf654b92db4407e3d8b4d66df
+  languageName: node
+  linkType: hard
+
+"@dateam/ark@workspace:packages/ark":
   version: 0.0.0-use.local
   resolution: "@dateam/ark@workspace:packages/ark"
   dependencies:
@@ -1519,13 +1535,6 @@ __metadata:
     typescript: ^4.1.2
   languageName: unknown
   linkType: soft
-
-"@dateam/ark@npm:^0.0.8":
-  version: 0.0.8
-  resolution: "@dateam/ark@npm:0.0.8"
-  checksum: f19e344cb882b86f182106e32c54ead0d573cd3e284875226eae6f12cc9162468223babbee6668d8e9a01fdc8ea8dede94af1089d24c9ddd1d4cf9b7f39b7c87
-  languageName: node
-  linkType: hard
 
 "@eslint/eslintrc@npm:^0.2.2":
   version: 0.2.2

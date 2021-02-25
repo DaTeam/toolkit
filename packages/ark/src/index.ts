@@ -55,13 +55,18 @@ export const requireExtendedPrototypes = (): void => { };
 export class RegExp {
     public static readonly EscapedIsoDate = /^\$\{DATE_(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)\}$/;
     public static readonly IsoDate = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-    public static readonly DateFormat = /^((?:[0-3])(?:(?<=[0-2])[0-9]|(?<=3)[01]))[-\/]((?:[01])(?:(?<=0)[0-9]|(?<=1)[0-2]))[-\/](\d{4})(?: ([0-2](?:(?<=[0-1])[0-9]|(?<=2)[0-4])):([0-5][0-9])(?:[:]([0-5][0-9]))?)?$/; // eslint-disable-line no-useless-escape, max-len
+    public static readonly DateFormat = /^([0-3][0-9])[-\/]([01][0-9])[-\/](\d{4})(?: ([0-2][0-9]):([0-5][0-9])(?:[:]([0-5][0-9]))?)?$/; // eslint-disable-line no-useless-escape, max-len
     public static readonly DateInputPattern = /^(\d{1,2})?(\/)?(\d{1,2})?(\/)?(\d{1,4})?$/; // eslint-disable-line no-useless-escape
-    public static readonly DateAutoSlash = /^((?:\d{2})(?:(?<=\d{2})\/(?:\d{2}))?)$/;
-    public static readonly TimeFormat = /^(?:([0-2](?:(?<=[0-1])[0-9]|(?<=2)[0-4])):([0-5][0-9])(?:[:]([0-5][0-9]))?)?$/; // eslint-disable-line max-len
+    public static readonly DateAutoSlash = /^(\d{2}(?:\/\d{2})?)$/;
+    public static readonly TimeFormat = /^([0-2][0-9]):([0-5][0-9])(?:[:]([0-5][0-9]))?$/; // eslint-disable-line max-len
     public static readonly TimeInputPattern = /^(\d{1,2})?(:)?(\d{1,2})?$/; // eslint-disable-line no-useless-escape
     public static readonly TimeAutoColon = /^(\d{2})$/;
-    public static readonly DateTimeFormat = /^((?:[0-3])(?:(?<=[0-2])[0-9]|(?<=3)[01]))[-\/]((?:[01])(?:(?<=0)[0-9]|(?<=1)[0-2]))[-\/](\d{4})(?: ([0-2](?:(?<=[0-1])[0-9]|(?<=2)[0-4])):([0-5][0-9]))$/; // eslint-disable-line no-useless-escape, max-len
+    // Complete Regexp with lookbehind (not fully supported by browsers)
+    // public static readonly DateFormat = /^((?:[0-3])(?:(?<=[0-2])[0-9]|(?<=3)[01]))[-\/]((?:[01])(?:(?<=0)[0-9]|(?<=1)[0-2]))[-\/](\d{4})(?: ([0-2](?:(?<=[0-1])[0-9]|(?<=2)[0-4])):([0-5][0-9])(?:[:]([0-5][0-9]))?)?$/; // eslint-disable-line no-useless-escape, max-len
+    // public static readonly TimeFormat = /^(?:([0-2](?:(?<=[0-1])[0-9]|(?<=2)[0-4])):([0-5][0-9])(?:[:]([0-5][0-9]))?)?$/; // eslint-disable-line max-len
+    // public static readonly DateTimeFormat = /^((?:[0-3])(?:(?<=[0-2])[0-9]|(?<=3)[01]))[-\/]((?:[01])(?:(?<=0)[0-9]|(?<=1)[0-2]))[-\/](\d{4})(?: ([0-2](?:(?<=[0-1])[0-9]|(?<=2)[0-4])):([0-5][0-9]))$/; // eslint-disable-line no-useless-escape, max-len
+    // public static readonly DateAutoSlash = /^((?:\d{2})(?:(?<=\d{2})\/(?:\d{2}))?)$/;
+    public static readonly DateTimeFormat = /^^([0-3][0-9])[-\/]([01][0-9])[-\/](\d{4}) ([0-2][0-9]):([0-5][0-9])$/; // eslint-disable-line no-useless-escape, max-len
     public static readonly DateTimeInputPattern = /^(\d{1,2})?(?:\/)?(\d{1,2})?(?:\/)?(\d{1,4})?(?: )?(\d{1,2})?(?::)?(\d{1,2})?$/; // eslint-disable-line no-useless-escape, max-len
     public static readonly DateTimeAutoColon = /^(\d{2}\/\d{2}\/\d{4} \d{2})$/;
     public static readonly DateTimeAutoSpace = /^(\d{2}\/\d{2}\/\d{4})$/;
@@ -572,12 +577,14 @@ const MINUTE_MILLISEC = 1000;
 
 let toJSONDateFallback = Date.prototype.toJSON;
 
+function toJsonDateUTC(this: Date) {
+    return formatDateTimeUTC(this);
+};
+
 export const overrideDateJsonAsUTC = () => {
     toJSONDateFallback = Date.prototype.toJSON;
 
-    Date.prototype.toJSON = function () {
-        return formatDateTimeUTC(this);
-    };
+    Date.prototype.toJSON = toJsonDateUTC;
 };
 
 export const rollbackDateJsonAsUTC = () => {
@@ -1049,6 +1056,11 @@ export const safeJsonReviver = (_key: any, value: any) => {
     if (BIG_INT_SUPPORTED && isString(value) && value.startsWith('BIGINT::')) return BigInt(value.substr(8));
 
     if (isString(value)) {
+        if (Date.prototype.toJSON === toJsonDateUTC) {
+            const match = value.match(RegExp.DateFormat);
+            if (isArray(match) && match.length >= 2) return parseDateUTC(value);
+        }
+
         const match = value.match(RegExp.EscapedIsoDate);
         if (isArray(match) && match.length >= 2) return safeParseIsoDate(match[1]);
     }
@@ -1085,7 +1097,7 @@ export const fromJSON = <T = any>(value: string, reviver?: (key: string, value: 
 
 export const quickClone = <T>(arg: T): T | null => {
     try {
-        return JSON.parse(JSON.stringify(arg, safeJsonReplacer), safeJsonReviver);
+        return fromJSON(toJSON(arg));
     }
     catch (error) {
         return null;
