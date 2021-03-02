@@ -18,6 +18,8 @@ import {
 } from '@dateam/ark';
 import { StateValue } from './state';
 
+export { default as usePrevious } from './usePrevious';
+
 export type CallbackAnyArg = (...args: any[]) => unknown;
 
 /*
@@ -177,16 +179,20 @@ export const useWhyDidYouUpdate = (name: string, props: Record<any, any>): void 
  ** TODO: Change behavior to have undefined instead of null as fallback value
  */
 export const useInternalValue = <S extends any>(
-    externalValue: StateValue<S> | null,
-    defaultValue: StateValue<S> | null = null
+    externalValue: S | null,
+    defaultValue: S | null = null
 ): [S | null, React.Dispatch<React.SetStateAction<S | null>>] => {
-    const [internalValue, setInternalValue] = React.useState(externalValue || defaultValue);
+    const [internalValue, setInternalValue] = React.useState(() => externalValue ?? defaultValue);
 
     React.useEffect(() => {
-        if (externalValue !== internalValue) {
-            setInternalValue(externalValue || defaultValue);
-        }
-    }, [externalValue]); // eslint-disable-line react-hooks/exhaustive-deps
+        setInternalValue(internalValue => {
+            if (externalValue !== internalValue) {
+                return externalValue ?? defaultValue;
+            }
+
+            return internalValue;
+        });
+    }, [externalValue]);
 
     return [internalValue, setInternalValue];
 };
