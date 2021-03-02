@@ -1140,13 +1140,13 @@ export const setIntervalAsync = (handler: () => any, timeout?: number) => {
         if (timeoutId) clearTimeout(timeoutId);
     };
 
-    intervalFn();
+    timeoutId = setTimeout(intervalFn, timeout);
 
     async function intervalFn() {
         await Promise.resolve(handler());
         if (!enabled) return;
 
-        timeoutId = setTimeout(intervalFn, timeout!);
+        timeoutId = setTimeout(intervalFn, timeout);
     }
 
     return clear;
