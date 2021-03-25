@@ -19,6 +19,7 @@ import { StateValue } from './state';
 
 export { default as usePrevious } from './usePrevious';
 export { default as useInternalValueManager } from './useInternalValueManager';
+export * from './propTypes';
 
 export type CallbackAnyArg = (...args: any[]) => unknown;
 
