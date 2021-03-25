@@ -13,12 +13,12 @@ import {
     DebounceInterval,
     objectPick,
     stringFormat,
-    isValidNumber,
-    take
+    isValidNumber
 } from '@dateam/ark';
 import { StateValue } from './state';
 
 export { default as usePrevious } from './usePrevious';
+export { default as useInternalValueManager } from './useInternalValueManager';
 
 export type CallbackAnyArg = (...args: any[]) => unknown;
 
