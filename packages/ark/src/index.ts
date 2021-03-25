@@ -1029,7 +1029,7 @@ export const getPropertySafe = <T, P extends ObjectAccessor<T>>(obj: T, property
 
 export const cast = <T>(arg: any): T => arg as T;
 
-const BIG_INT_SUPPORTED = isFunction(BigInt);
+const BIG_INT_SUPPORTED = isFunction(globalThis?.BigInt);
 
 export const safeJsonReplacer = (_key: any, value: any) => {
     if (BIG_INT_SUPPORTED && typeof value === "bigint") return `BIGINT::${value}`;
@@ -1053,7 +1053,7 @@ export const safeJsonReviver = (_key: any, value: any) => {
     if (value === 'NaN') return NaN;
     if (value === 'Infinity') return Infinity;
     if (value === '-Infinity') return -Infinity;
-    if (BIG_INT_SUPPORTED && isString(value) && value.startsWith('BIGINT::')) return BigInt(value.substr(8));
+    if (BIG_INT_SUPPORTED && isString(value) && value.startsWith('BIGINT::')) return globalThis?.BigInt(value.substr(8));
 
     if (isString(value)) {
         if (Date.prototype.toJSON === toJsonDateUTC) {
@@ -1496,7 +1496,7 @@ export class NetworkConnectivity {
 
         this.endpoint = endpoint;
 
-        if (window == null || !('navigator' in window)) {
+        if (globalThis == null || !('navigator' in globalThis)) {
             this.isSupported = false;
             return;
         }
@@ -1514,7 +1514,7 @@ export class NetworkConnectivity {
 
         this.isMonitoring = true;
 
-        this.getUpdatedStatus(window.navigator?.onLine ?? true)
+        this.getUpdatedStatus(globalThis?.navigator?.onLine ?? true)
             .then(statusUpdate => {
                 if (statusUpdate != null) {
                     this.isOnline = statusUpdate;
@@ -1531,15 +1531,15 @@ export class NetworkConnectivity {
             }
         }, this.pingInterval);
 
-        window.addEventListener('online', this.onlineHandler);
-        window.addEventListener('offline', this.offlineHandler);
+        globalThis?.addEventListener('online', this.onlineHandler);
+        globalThis?.addEventListener('offline', this.offlineHandler);
     }
 
     stopMonitoring(): void {
         if (!this.isMonitoring) return;
 
-        window.removeEventListener('online', this.onlineHandler);
-        window.removeEventListener('offline', this.offlineHandler);
+        globalThis?.removeEventListener('online', this.onlineHandler);
+        globalThis?.removeEventListener('offline', this.offlineHandler);
 
         if (isFunction(this.clearPingInterval)) this.clearPingInterval();
     }
