@@ -42,6 +42,7 @@ type NativeRegExp = globalThis.RegExp;
 
 const fnObjectToString = Object.prototype.toString;
 const ArrayProto = Array.prototype;
+const objectTag = '[object Object]';
 const stringTag = '[object String]';
 const numberTag = '[object Number]';
 const dateTag = '[object Date]';
@@ -154,6 +155,29 @@ export const isValidDate = (arg: any): arg is Date => isDate(arg) && !isNaN(arg.
 export const isUndefined = (arg: any): arg is undefined => arg === undef;
 export const isNull = (arg: any): arg is null => arg === null;
 export const isObjectLike = (arg: any): arg is Record<any, any> => !!arg && typeof arg === 'object'; // eslint-disable-line eqeqeq
+export const isPlainObject = (arg: any): arg is Record<any, any> => {
+    if (!hasObjectPrototype(arg)) return false;
+
+    // If has modified constructor
+    const ctor = arg.constructor;
+    if (typeof ctor === 'undefined') {
+        return true;
+    }
+
+    // If has modified prototype
+    const prot = ctor.prototype;
+    if (!hasObjectPrototype(prot)) return false;
+
+    // If constructor does not have an Object-specific method
+    if (!hasProperty(prot, 'isPrototypeOf')) return false;
+
+    // Most likely a plain Object
+    return true;
+};
+function hasObjectPrototype(arg: any): boolean {
+    return fnObjectToString.call(arg) === objectTag;
+}
+
 export const isNativeTypeObject = (arg: any): boolean =>
     isUndefined(arg) ||
     isNull(arg) ||
@@ -279,6 +303,10 @@ export const assertIsNull: (value: any, msg?: string) => asserts value is null =
  ** Array
  */
 
+export const ensureArray = <T>(value: T | T[]): T[] => {
+    return isArray(value) ? value : [value];
+};
+
 export const addRange = (src: any[], newElements: any[]) => {
     if (!isArray(src)) throw new TypeError('src param is not valid');
     if (!isArray(newElements)) throw new TypeError('newElements param is not valid');
@@ -292,15 +320,17 @@ export const clearCollection = (collection: any[]) => {
     collection.splice(0, collection.length);
 };
 
+const basicDiff = (array1: any[], array2: any[]): any[] => array1.filter(x => array2.indexOf(x) === -1);
+
 export const diffCollection = (
     array: any[],
     values: any[],
     options?: DiffOptions
 ): any[] => {
+    if (!isArray(array) || !isArray(values) || !array.length) return [];
+    if (options == null) return basicDiff(array, values);
+
     const result: any[] = [];
-
-    if (!isArray(array) || !isArray(values) || !array.length) return result;
-
     const internalOptions = options || {};
     const {
         objectKey,
@@ -392,6 +422,7 @@ export const orderBy = <T>(
         const aProperty = getPropertySafe(itemA, propertyAccessor);
         const bProperty = getPropertySafe(itemB, propertyAccessor);
 
+        if (aProperty === bProperty) return 0;
         if (aProperty == null) return nullOrderValue * 1;
         if (bProperty == null) return nullOrderValue * -1;
         if (aProperty < bProperty) return ascOrderValue * -1;
@@ -483,6 +514,11 @@ export const replaceAt = <T>(array: T[], index: number, item: T): void => {
     if (!isArray(array)) return;
 
     array.splice(index, 1, item);
+
+    // No mutation
+    // const copy = array.slice(0);
+    // copy[index] = value;
+    // return copy;
 };
 
 export const replaceCollectionItem = <T>(array: T[], item: T, predicate: (item: T, index: number) => boolean): void => {
@@ -1129,6 +1165,8 @@ export const setTimeoutAsync = <T>(handler: () => T, timeout?: number): Promise<
             reject(err);
         }
     });
+
+export const sleep = (timeout: number): Promise<void> => new Promise(resolve => setTimeout(resolve, timeout));
 
 // [Warning] Interval is triggered after execution complete
 export const setIntervalAsync = (handler: () => any, timeout?: number) => {
