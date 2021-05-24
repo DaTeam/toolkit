@@ -1,6 +1,7 @@
 /* eslint-disable no-extend-native */
 
 import { forEachProperty, ObjectAccessor, ObjectAccessorValue } from './object';
+import { strRemoveDiacritics } from './string';
 
 export enum Type {
     Null = 1 << 0,
@@ -599,6 +600,72 @@ export const findDiff = (source: string, compareTo: string): number => {
     if (source.length < compareTo.length) [sourceArray, compareArray] = [compareArray, sourceArray];
 
     return sourceArray.findIndex((chr, idx) => chr !== compareArray[idx]);
+};
+
+type StrTransformationOptions = {
+    case?: 'lower' | 'upper';
+    removeDiacritics?: boolean;
+};
+
+const STR_TRANSFORM_DEFAULTS: StrTransformationOptions = {
+    case: undefined,
+    removeDiacritics: false
+};
+
+export const strTransform = (value: string, options: StrTransformationOptions): string => {
+    if (!isString(value)) return value;
+
+    let transformationStr = value;
+
+    const config = computeOptions(STR_TRANSFORM_DEFAULTS, options);
+
+    switch (config.case) {
+        case 'lower':
+            transformationStr = transformationStr.toLowerCase();
+            break;
+        case 'upper':
+            transformationStr = transformationStr.toUpperCase();
+            break;
+        default:
+            break;
+    }
+
+    if (config.removeDiacritics === true) transformationStr = strRemoveDiacritics(transformationStr);
+
+    return transformationStr;
+};
+
+type StrIncludesOptions = {
+    startsWith: boolean;
+    caseInsensitive: boolean;
+    ignoreDiacritics: boolean;
+};
+
+const STR_INCLUDES_DEFAULTS: StrIncludesOptions = {
+    startsWith: false,
+    caseInsensitive: false,
+    ignoreDiacritics: false
+};
+
+export const strIncludes = (value: string, compareWith: string, options: StrIncludesOptions): boolean => {
+    if (!isString(value) || !isString(compareWith)) return false;
+
+    const config = computeOptions(STR_INCLUDES_DEFAULTS, options);
+
+    const transformOptions: StrTransformationOptions = {
+        case: config.caseInsensitive ? 'lower' : undefined,
+        removeDiacritics: !!config.ignoreDiacritics
+    };
+
+    const formattedValue = strTransform(value, transformOptions);
+    const formattedCompareWith = strTransform(compareWith, transformOptions);
+
+    const index = formattedCompareWith.indexOf(formattedValue);
+
+
+    if (config.startsWith === true) return index === 0;
+
+    return index >= 0;
 };
 
 /**
@@ -1201,6 +1268,7 @@ export const noop = (): void => { };
  */
 
 export * from './object';
+export * from './string';
 
 export const hasProperty = <T>(obj: T, prop: any): prop is keyof T => {
     if (!isObjectLike(obj)) throw new TypeError('obj is not valid');
