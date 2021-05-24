@@ -1,7 +1,7 @@
 {
     "name": "@dateam/ark",
     "description": "Ark",
-    "version": "0.2.6",
+    "version": "0.2.14",
     "module": "dist/index.js",
     "types": "dist/index.d.ts",
     "main": "dist/index.js",

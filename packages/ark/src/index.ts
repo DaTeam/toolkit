@@ -73,6 +73,7 @@ export class RegExp {
     public static readonly DateTimeAutoSpace = /^(\d{2}\/\d{2}\/\d{4})$/;
     public static readonly StringFormat = /{(\d+)}/g;
     public static readonly LocalIP = /^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/;
+    public static readonly Email = /^((?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(?:2(?:5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(?:2(?:5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\]))$/i; // eslint-disable-line max-len
 }
 
 const innerMapToDeepObject = (target: any, src: any, options: MapOptions): void => {
@@ -455,8 +456,9 @@ export const sortByProperty = <T, A extends ObjectAccessor<T>>(
         const aProperty = getPropertySafe(aItem, propertyAccessor);
         const bProperty = getPropertySafe(bItem, propertyAccessor);
 
-        if (aProperty === null) return nullOrderValue * 1;
-        if (bProperty === null) return nullOrderValue * -1;
+        if (aProperty === bProperty) return 0;
+        if (aProperty == null) return nullOrderValue * 1;
+        if (bProperty == null) return nullOrderValue * -1;
 
         return ascOrderValue * compareFn(aProperty, bProperty);
     });
@@ -578,7 +580,9 @@ export const stringFormat = (format: string, ...formatValues: any[]): string => 
 
     return format.replace(
         RegExp.StringFormat,
-        (match, number) => (isUndefined(formatValues[number]) ? match : formatValues[number])
+        (_, number) => (isUndefined(formatValues[number]) ? '' : formatValues[number])
+        // Opinionated change
+        // (match, number) => (isUndefined(formatValues[number]) ? match : formatValues[number])
     );
 };
 
@@ -1481,15 +1485,54 @@ export class Observer<T extends any = any, CallbackType extends Function = Obser
         };
     }
 
-    notify(data: T) {
-        this.subscribers.forEach(sub => sub(data));
+    notify(data: T): void {
+        this.subscribers.forEach(sub => {
+            // Try/catch to contain any error thrown by subscribers
+            try {
+                sub(data);
+            }
+            catch {
+                // Ignore
+            }
+        });
+    }
+}
+
+export class MemoryObserver<T extends any = any, CallbackType extends Function = ObserverCallback<T>> extends Observer<T, CallbackType> {
+    private _hasMemory = false;
+    private _memory: T | undefined;
+
+    protected get memory(): T | undefined {
+        return this._memory;
+    }
+    protected set memory(value: T | undefined) {
+        this._memory = value;
+        this._hasMemory = true;
+    }
+
+    subscribe(callback: CallbackType) {
+        if (this._hasMemory) {
+            callback(this.memory);
+        }
+
+        return super.subscribe(callback);
+    }
+
+    notify(data: T): void {
+        this.memory = data;
+        super.notify(data);
+    }
+
+    forget(): void {
+        this._memory = undefined;
+        this._hasMemory = false;
     }
 }
 
 export type TimedNotifierCallback<T> = (
     data: T,
-    resolve?: (value?: unknown) => void,
-    reject?: (reason?: any) => void
+    resolve: (value?: unknown) => void,
+    reject: (reason?: any) => void
 ) => unknown;
 
 export class TimedNotifier<T extends any = any> extends Observer<T, TimedNotifierCallback<T>> {
@@ -2049,6 +2092,7 @@ export class ServiceError extends Error {
     constructor(code: string, msg?: string, data?: any) {
         super(msg);
 
+        this.name = 'ServiceError';
         this.code = code;
         this.data = data;
     }
