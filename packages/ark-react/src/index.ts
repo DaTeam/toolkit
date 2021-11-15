@@ -480,3 +480,4 @@ export { default as createHistoryHook } from './createHistoryHook';
 export { default as concatClassName } from './concatClassName';
 export { default as useConnectivity } from './useConnectivity';
 export * from './useConnectivity';
+export { default as useStateRef } from './useStateRef';

@@ -504,7 +504,7 @@ export const removeFrom = <T>(array: T[], index: number, count?: number): void =
     if (!isArray(array)) throw new TypeError('array is not valid');
     if (!isValidNumber(index)) throw new TypeError('index is not valid');
 
-    array.splice(index, count);
+    array.splice(index, count ?? array.length - index);
 };
 
 export const insertAt = <T>(array: T[], index: number, item: T): void => {
@@ -612,7 +612,7 @@ const STR_TRANSFORM_DEFAULTS: StrTransformationOptions = {
     removeDiacritics: false
 };
 
-export const strTransform = (value: string, options: StrTransformationOptions): string => {
+export const strTransform = (value: string, options?: StrTransformationOptions): string => {
     if (!isString(value)) return value;
 
     let transformationStr = value;
@@ -636,9 +636,9 @@ export const strTransform = (value: string, options: StrTransformationOptions): 
 };
 
 type StrIncludesOptions = {
-    startsWith: boolean;
-    caseInsensitive: boolean;
-    ignoreDiacritics: boolean;
+    startsWith?: boolean;
+    caseInsensitive?: boolean;
+    ignoreDiacritics?: boolean;
 };
 
 const STR_INCLUDES_DEFAULTS: StrIncludesOptions = {
@@ -647,7 +647,7 @@ const STR_INCLUDES_DEFAULTS: StrIncludesOptions = {
     ignoreDiacritics: false
 };
 
-export const strIncludes = (value: string, compareWith: string, options: StrIncludesOptions): boolean => {
+export const strIncludes = (value: string, compareWith: string, options?: StrIncludesOptions): boolean => {
     if (!isString(value) || !isString(compareWith)) return false;
 
     const config = computeOptions(STR_INCLUDES_DEFAULTS, options);
@@ -1473,6 +1473,58 @@ export class TimeoutPromise<T> {
         clearTimeout(this.timeoutId);
         this.reject(new Error('Cancelled'));
         this._isTerminated = true;
+    }
+}
+
+type PromiseCancelCallback = () => unknown;
+
+export class CancellablePromise<T> extends Promise<T> {
+    private onCancel: PromiseCancelCallback = noop;
+
+    constructor(
+        executor: (resolve: (value: T | PromiseLike<T>) => void, reject: (reason?: any) => void) => void,
+        onCancel?: () => unknown
+    ) {
+        super(executor);
+
+        if (isFunction(onCancel)) this.onCancel = onCancel;
+    }
+
+    cancel() {
+        this.onCancel();
+    }
+
+    static fromPromise<T>(promise: Promise<T>, onCancel?: () => unknown) {
+        let cancel: typeof onCancel;
+
+        if (promise instanceof CancellablePromise && isFunction(promise.cancel)) {
+            cancel = promise.cancel;
+        }
+        else if (isFunction(onCancel)) {
+            cancel = onCancel;
+        }
+
+        return new CancellablePromise<T>(async (resolve, reject) => {
+            try {
+                const result = await promise;
+                return resolve(result);
+            }
+            catch (err) {
+                return reject(err);
+            }
+        }, cancel);
+    }
+
+    withPromise<U>(promise: Promise<U>) {
+        return new CancellablePromise<U>(async (resolve, reject) => {
+            try {
+                const result = await promise;
+                return resolve(result);
+            }
+            catch (err) {
+                return reject(err);
+            }
+        }, this.onCancel);
     }
 }
 
