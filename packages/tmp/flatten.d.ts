@@ -72,7 +72,9 @@ type TransformSelector<T extends object> = {
 // Final
 
 // declare namespace Utils {
-//     type FormatFlattenedKey<Key, Prop> = `${Extract<Key, string | number>}${Prop extends string ? Capitalize<Prop> : Extract<Prop, number>}`;
+//     namespace _ {
+//         type FormatFlattenedKey<Key, Prop> = `${Extract<Key, string | number>}${Prop extends string ? Capitalize<Prop> : Extract<Prop, number>}`;
+//     }
 
 //     type Flatten<T extends object, ExcludeTypes extends any = never> =
 //         object extends T ?
@@ -89,7 +91,7 @@ type TransformSelector<T extends object> = {
 //                                         : V extends ExcludeTypes ?
 //                                             Pick<T, K>
 //                                             : Flatten<V, ExcludeTypes> extends infer FV ?
-//                                                 ({[P in keyof FV as FormatFlattenedKey<K, P>]: FV[P] })
+//                                                 ({[P in keyof FV as _.FormatFlattenedKey<K, P>]: FV[P] })
 //                                                 : never
 //                                 : Pick<T, K>
 //                             : Pick<T, K>
