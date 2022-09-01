@@ -33,6 +33,7 @@ declare namespace Utils {
         namespace _ {
             type NativeReduxReducersMapObject = import('redux').ReducersMapObject;
             type NativeReduxReducers = import('redux').Reducer;
+            type NativeReduxAction = import('redux').Action;
             type NativeReduxAnyAction = import('redux').AnyAction;
             type NativeReduxActionCreator<A> = import('redux').ActionCreator<A>;
             type NativeImmutableMap<K = any, V = any> = import('immutable').Map<K, V>;
@@ -51,6 +52,34 @@ declare namespace Utils {
                 | _.NativeImmutableList
             ;
         }
+
+        /*
+         ** Since pretty much nothing is typed in term of redux actions/thunk
+         ** Here is an encapsulated type providing a generic `Dispatch` type with default values as any
+         ** for a dispatch using for example useDispatch from 'redux-thunk'
+         */
+        type ThunkDispatch<
+            State = any,
+            ExtraArguments = any,
+            A extends _.NativeReduxAction = _.NativeReduxAnyAction
+        > = import('redux-thunk').ThunkDispatch<State, ExtraArguments, A>;
+
+        /*
+         ** Since pretty much nothing is typed in term of redux actions/thunk
+         ** Here is an encapsulated type providing a generic `Action` type with default values as any
+         ** for a dispatch using for example useDispatch from 'redux-thunk'
+         */
+        type ThunkAction<
+            ReturnValue = any,
+            State = any,
+            ExtraArguments = any,
+            A extends _.NativeReduxAction = _.NativeReduxAnyAction
+        > = import('redux-thunk').ThunkAction<
+            ReturnValue,
+            State,
+            ExtraArguments,
+            A
+        >;
 
         /*
          ** `State` has been added for Redux reducers using TypeScript
