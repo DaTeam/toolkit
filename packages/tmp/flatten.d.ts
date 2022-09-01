@@ -1,3 +1,5 @@
+// Add sample usage
+
 const nested = {
   a: {
     b: {
@@ -65,3 +67,38 @@ type TransformSelector<T extends object> = {
       Date
   >[K];
 };
+
+
+// Final
+
+// declare namespace Utils {
+//     type FormatFlattenedKey<Key, Prop> = `${Extract<Key, string | number>}${Prop extends string ? Capitalize<Prop> : Extract<Prop, number>}`;
+
+//     type Flatten<T extends object, ExcludeTypes extends any = never> =
+//         object extends T ?
+//             object
+//             : {
+//                 [K in keyof T]-?: (
+//                     x: T[K] extends infer V ?
+//                         V extends NonNullable<V> ?
+//                             V extends object ?
+//                                 V extends readonly any[] ?
+//                                     Pick<T, K>
+//                                     : keyof V extends never ?
+//                                         Pick<T, K>
+//                                         : V extends ExcludeTypes ?
+//                                             Pick<T, K>
+//                                             : Flatten<V, ExcludeTypes> extends infer FV ?
+//                                                 ({[P in keyof FV as FormatFlattenedKey<K, P>]: FV[P] })
+//                                                 : never
+//                                 : Pick<T, K>
+//                             : Pick<T, K>
+//                         : never
+//                 ) => void
+//             } extends Record<keyof T, (y: infer O) => void> ?
+//             O extends infer U ?
+//                 { [K in keyof O]: O[K] }
+//                 : never
+//             : never
+//         ;
+// }
